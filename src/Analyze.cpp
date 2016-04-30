@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
 	sl_tp_pairs.push_back(make_pair(75, 225));
 
 	for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {
-		Strategy *strategy = new Strategy(parser, it->first, it->second);
+		Strategy *strategy = new Strategy(parser, it->first, it->second, 12);
 		strategy->run();
 		delete strategy;
 	}

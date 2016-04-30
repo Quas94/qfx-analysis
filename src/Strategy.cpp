@@ -11,8 +11,8 @@
  */
 using namespace std;
 
-Strategy::Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips) : parser(parser),
-	stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips) {
+Strategy::Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips, int cooldown) : parser(parser),
+	stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips), cooldown(cooldown) {
 
 	// initialise and insert a bunch of AbstractIndicator implementations here
 	Stochastic *stochastic = new Stochastic(parser);
@@ -52,6 +52,10 @@ void Strategy::run() {
 	// stores all currently open trades
 	vector<Trade*> open_trades;
 
+	// this value must be 0 or less before we can start looking for trades
+	// will be reset to be equal to 'cooldown' when a trade is made
+	int cooldown_remaining = 0;
+
 	// iterate through all candlesticks and apply strategy
 	int num_candles = parser->get_num_candles();
 	const double *close_prices = parser->get_close_prices();
@@ -86,33 +90,37 @@ void Strategy::run() {
 			// }
 		}
 
-		// make a trade if all indicators in ta_list come to the same conclusion
-		// regardless of whether or not we already have trade(s) open
-		Signal signal = _NULL;
-		for (auto it = indicators.begin(); it != indicators.end(); it++) {
-			AbstractIndicator *indicator = *it;
-			if (signal == _NULL) {
-				// very first iteration
-				signal = indicator->get_signal(i);
-				if (signal == NEUTRAL || signal == NOT_APPLICABLE)
-					break;
-				continue;
+		// if cooldown_remaining is 0 or less, we can check for new trades
+		if (cooldown_remaining <= 0) {
+			// make a trade if all indicators in ta_list come to the same conclusion
+			// regardless of whether or not we already have trade(s) open
+			Signal signal = _NULL;
+			for (auto it = indicators.begin(); it != indicators.end(); it++) {
+				AbstractIndicator *indicator = *it;
+				if (signal == _NULL) {
+					// very first iteration
+					signal = indicator->get_signal(i);
+					if (signal == NEUTRAL || signal == NOT_APPLICABLE)
+						break;
+					continue;
+				}
+				Signal new_signal = indicator->get_signal(i);
+				if (new_signal != signal) {
+					signal = NOT_APPLICABLE;
+					break; // is opposite to what we had, or neutral, or not applicable
+				}
 			}
-			Signal new_signal = indicator->get_signal(i);
-			if (new_signal != signal) {
-				signal = NOT_APPLICABLE;
-				break; // is opposite to what we had, or neutral, or not applicable
+			// check what signal we ended up with
+			if (signal == BUY || signal == SELL) {
+				// actually do something here because all indicators showed same signal
+				double entry_price = current_price;
+				Trade *new_trade = new Trade(signal, current_price, stop_loss_pips, take_profit_pips);
+				open_trades.push_back(new_trade);
+				// refresh the cooldown
+				cooldown_remaining = cooldown;
 			}
 		}
-		// check what signal we ended up with
-		if (signal == BUY || signal == SELL) {
-			// actually do something here because all indicators showed same signal
-			double entry_price = current_price;
-			Trade *new_trade = new Trade(signal, current_price, stop_loss_pips, take_profit_pips);
-			open_trades.push_back(new_trade);
-			//cout << "[Trade] Opened a " << (current_position == LONG ? "long" : "short") << " position at " <<
-			//	to_string(entry_price) << " (hour " << to_string(i + 1) << ")" << endl;
-		}
+		cooldown_remaining--;
 	}
 
 	cout << "Finished, about to clear open_trades()" << endl;
