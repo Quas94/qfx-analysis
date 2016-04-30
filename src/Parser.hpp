@@ -25,9 +25,6 @@ private:
 	double *low_prices;
 	double *close_prices;
 
-	// hour that we've parsed up to
-	int current_hour;
-
 	const int NONE = -1;
 
 public:

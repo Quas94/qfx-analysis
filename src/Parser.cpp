@@ -10,7 +10,7 @@
 using namespace std;
 
 Parser::Parser(SimpleDate start_date, SimpleDate end_date, Timeframe timeframe) : start_date(start_date), end_date(end_date),
-current_date(start_date), current_file_year(start_date.get_year()), timeframe(timeframe), num_candles(0), current_hour(NONE) {
+current_date(start_date), current_file_year(start_date.get_year()), timeframe(timeframe), num_candles(0) {
 	if (start_date > end_date) throw runtime_error("end_date can't be earlier than start_date");
 	max_candles = max_candle_bars(start_date.get_year(), end_date.get_year(), timeframe);
 	open_prices = new double[max_candles];
@@ -27,16 +27,13 @@ Parser::~Parser() {
 }
 
 void Parser::create_candle(double open, double high, double low, double close) {
-	// tries to create a candle with the given inputs, if current_hour isn't equivalent to NONE
-	if (current_hour != NONE) {
-		// add to prices
-		open_prices[num_candles] = open;
-		high_prices[num_candles] = high;
-		low_prices[num_candles] = low;
-		close_prices[num_candles] = close;
-		// increment candle count
-		num_candles++;
-	}
+	// add to prices
+	open_prices[num_candles] = open;
+	high_prices[num_candles] = high;
+	low_prices[num_candles] = low;
+	close_prices[num_candles] = close;
+	// increment candle count
+	num_candles++;
 }
 
 int Parser::get_num_candles() const {
@@ -147,6 +144,10 @@ void Parser::parse() {
 				if (candle_open == NONE) { // lines_read should be 0 here
 					if (lines_read != 1)
 						throw runtime_error("candle_open == NONE when lines_read is " + to_string(lines_read));
+
+					if (stoi(minute_raw) != 0) {
+						cout << "Candle open starting on non-zero: " << hour_raw << ":" << minute_raw << endl;
+					}
 
 					// first line of this candle, so just overwrite
 					candle_open = line_open;

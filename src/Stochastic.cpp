@@ -13,8 +13,8 @@ Stochastic::Stochastic(Parser *parser, int fastk, int slowk, int slowd) : Abstra
 	this->out_slowd = new double[max_candles];
 
 	// @TODO allow for customisation of stochastic interpretation settings
-	this->threshold_buy = 10; // typically 20
-	this->threshold_sell = 90; // typically 80
+	this->threshold_buy = 15; // typically 20
+	this->threshold_sell = 85; // typically 80
 	// @TODO allow for customisation of stochastic technical settings
 	this->fastk_period = fastk;
 	this->slowk_period = slowk;

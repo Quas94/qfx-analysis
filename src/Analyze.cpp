@@ -28,6 +28,8 @@ int main(int argc, char** argv) {
 	Parser* parser = new Parser(start, end, Hour);
 	parser->parse();
 
+	cout << "After parsing, num candles = " << parser->get_num_candles() << endl;
+
 	cout << "REMINDER: we are assuming the currency is always EUR_USD right now" << endl;
 	cout << "REMINDER: we currently only look at closing price, without factoring in shadows" << endl;
 
