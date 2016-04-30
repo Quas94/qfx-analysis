@@ -16,15 +16,15 @@
 #include "Stochastic.hpp"
 
 #include "Constants.hpp"
-#include "SimpleDate.hpp"
+#include "Timeframe.hpp"
 #include "Parser.hpp"
 #include "Strategy.hpp"
 
 using namespace std;
 
 int main(int argc, char** argv) {
-	SimpleDate start(2015, 7, SimpleDate::WEEK_FIRST);
-	SimpleDate end(2016, 3, SimpleDate::WEEK_LAST);
+	SimpleDate start(2015, 7, 1);
+	SimpleDate end(2016, 3, 31);
 	Parser* parser = new Parser(start, end, Hour);
 	parser->parse();
 

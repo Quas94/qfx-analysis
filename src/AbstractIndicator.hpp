@@ -34,5 +34,3 @@ public:
 	// prints out a string description of the settings of this indicator
 	virtual string get_desc() = 0;
 };
-
-

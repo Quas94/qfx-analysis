@@ -1,73 +1,61 @@
+#include <vector>
 #include <string>
 
 #include "SimpleDate.hpp"
+#include "Util.hpp"
+#include "Constants.hpp"
 
 using namespace std;
 
-SimpleDate::SimpleDate(int year, int month, int week) : year(year), month(month), week(week) {
-	// nothing to do here, all done in uniform initialisation
+SimpleDate::SimpleDate(int year, int month, int day) : year(year), month(month), day(day) {
+	// all fields uniform initialised
 }
 
-// default copy constructor
-SimpleDate::SimpleDate(const SimpleDate &copy) = default;
-
-string SimpleDate::to_string() {
-	return std::to_string(year) + ", " + SimpleDate::monthToString(month) + ", week " + std::to_string(week);
+SimpleDate::SimpleDate(const string &line) {
+	vector<string> line_date_split = split(line, DASH);
+	year = stoi(line_date_split[0]);
+	month = stoi(line_date_split[1]);
+	day = stoi(line_date_split[2]);
 }
 
-// increments the date by 1 week
-SimpleDate SimpleDate::operator++(int) {
-	// save original value
-	SimpleDate original(year, month, week);
+// copy constructor: default
+SimpleDate::SimpleDate(const SimpleDate &from) = default;
 
-	week++;
-	if (week > WEEK_LAST) {
-		week = WEEK_FIRST;
-		month++;
-		if (month > 12) {
-			month = 1;
-			year++;
-		}
-	}
-
-	return original;
+int SimpleDate::get_year() {
+	return year;
 }
 
-string SimpleDate::monthToString(int month) {
-	switch (month) {
-	case 1:
-		return "Jan";
-	case 2:
-		return "Feb";
-	case 3:
-		return "Mar";
-	case 4:
-		return "Apr";
-	case 5:
-		return "May";
-	case 6:
-		return "Jun";
-	case 7:
-		return "Jul";
-	case 8:
-		return "Aug";
-	case 9:
-		return "Sep";
-	case 10:
-		return "Oct";
-	case 11:
-		return "Nov";
-	case 12:
-		return "Dec";
-	default:
-		throw runtime_error("Invalid month passed into SimpleDate::monthToString - " + std::to_string(month));
-	}
+int SimpleDate::get_month() {
+	return month;
+}
+
+int SimpleDate::get_day() {
+	return day;
+}
+
+bool operator==(const SimpleDate &a, const SimpleDate &b) {
+	return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
 bool operator>(const SimpleDate &a, const SimpleDate &b) {
-	if (a.year > b.year) return true;
-	if (a.year == b.year && a.month > b.month) return true;
-	if (a.year == b.year && a.month == b.month && a.week > b.week) return true;
+	if (a.year > b.year)
+		return true;
+	if (a.year == b.year && a.month > b.month)
+		return true;
+	if (a.year == b.year && a.month == b.month && a.day > b.day)
+		return true;
 
 	return false;
+}
+
+bool operator>=(const SimpleDate &a, const SimpleDate &b) {
+	return a > b || a == b;
+}
+
+bool operator<(const SimpleDate &a, const SimpleDate &b) {
+	return b > a;
+}
+
+bool operator<=(const SimpleDate &a, const SimpleDate &b) {
+	return b > a || b == a;
 }

@@ -4,43 +4,25 @@
 
 using namespace std;
 
-// date class represented in the format of year, month, week (week of month, from 1 to 5 inclusive)
 class SimpleDate {
-public:
-	static const int WEEK_FIRST = 1;
-	static const int WEEK_LAST = 5;
-
+private:
 	int year;
 	int month;
-	int week;
+	int day;
 
-	// constructor
-	SimpleDate(int year, int month, int week);
+public:
 
-	// copy constructor
-	SimpleDate(const SimpleDate &copy);
+	SimpleDate(int year, int month, int day);
+	SimpleDate(const string &line);
+	SimpleDate(const SimpleDate &from);
 
-	// returns string representation of this object
-	string to_string();
+	int get_year();
+	int get_month();
+	int get_day();
 
-	// post-increment operator overload, increments the date by a week
-	SimpleDate operator++(int);
-
-	// greater than operator overload
+	friend bool operator==(const SimpleDate &a, const SimpleDate &b);
 	friend bool operator>(const SimpleDate &a, const SimpleDate &b);
-
-	// converts month to string
-	static string monthToString(int month);
-};
-
-// valid time frames
-enum Timeframe {
-	Minute,
-	QuarterHour,
-	HalfHour,
-	Hour,
-	FourHour,
-	Day,
-	Week,
-	Month
+	friend bool operator>=(const SimpleDate &a, const SimpleDate &b);
+	friend bool operator<(const SimpleDate &a, const SimpleDate &b);
+	friend bool operator<=(const SimpleDate &a, const SimpleDate &b);
 };
