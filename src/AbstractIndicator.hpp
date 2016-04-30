@@ -11,12 +11,6 @@ enum Signal {
 	_NULL // placeholder for uninitialised
 };
 
-enum Position {
-	LONG,
-	SHORT,
-	NONE
-};
-
 class AbstractIndicator {
 protected:
 	const Parser *parser;

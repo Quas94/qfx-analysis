@@ -20,7 +20,6 @@ private:
 	int num_trades_closed;
 	int num_trades_lost;
 	int num_trades_won;
-	Position current_position;
 
 	void print_indicators();
 
@@ -31,7 +30,4 @@ public:
 	~Strategy();
 
 	void run();
-
-	static bool stopped_out(Position pos, double stop_loss, double price);
-	static bool taken_profit(Position pos, double take_profit, double price);
 };

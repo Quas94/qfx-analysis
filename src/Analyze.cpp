@@ -28,7 +28,14 @@ int main(int argc, char** argv) {
 	Parser* parser = new Parser(start, end, Hour);
 	parser->parse();
 
-	cout << "After parsing, num candles = " << parser->get_num_candles() << endl;
+	/*
+	cout << "After parsing, we have written " << parser->get_num_candles() << " candles" << endl;
+	cout << "First 100 OHLC:" << endl;
+	for (int i = 0; i < parser->get_num_candles(); i++) {
+		cout << parser->get_open_prices()[i] << ", " << parser->get_high_prices()[i] << ", " <<
+			parser->get_low_prices()[i] << ", " << parser->get_close_prices()[i] << endl;
+	}
+	*/
 
 	cout << "REMINDER: we are assuming the currency is always EUR_USD right now" << endl;
 	cout << "REMINDER: we currently only look at closing price, without factoring in shadows" << endl;

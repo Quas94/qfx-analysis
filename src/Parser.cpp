@@ -119,7 +119,7 @@ void Parser::parse() {
 				// determine if the date we're at is between start_date and end_date
 				current_date = SimpleDate(line_date_raw);
 				if (current_date < start_date) continue;
-				if (current_date > end_date) break;
+				if (current_date > end_date) return;
 
 				// only increment lines_read counter if we actually process this line
 				lines_read++;
