@@ -1,0 +1,17 @@
+## Visual Studio project files/folders
+.vs/
+Debug/
+Release/
+qfx.VC.opendb
+qfx.sdf
+qfx.sln
+qfx.vcxproj
+qfx.vcxproj.filters
+qfx.vcxproj.user
+qfx.aps
+qfx.rc
+resource.h
+
+## other
+results/
+
