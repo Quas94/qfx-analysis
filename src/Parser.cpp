@@ -11,7 +11,7 @@ using namespace std;
 
 Parser::Parser(SimpleDate start_date, SimpleDate end_date, Timeframe timeframe) : start_date(start_date), end_date(end_date),
 current_date(start_date), current_file_year(start_date.get_year()), timeframe(timeframe), num_candles(0) {
-	if (start_date > end_date) throw runtime_error("end_date can't be earlier than start_date");
+	if (start_date > end_date) throw runtime_error("start_date can't be later than end_date");
 	max_candles = max_candle_bars(start_date.get_year(), end_date.get_year(), timeframe);
 	open_prices = new double[max_candles];
 	high_prices = new double[max_candles];

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <fstream>
 
 #include "AbstractIndicator.hpp"
 
@@ -22,7 +23,7 @@ private:
 	int num_trades_lost;
 	int num_trades_won;
 
-	void print_indicators();
+	void print_indicators(ofstream &out);
 
 public:
 
@@ -30,5 +31,5 @@ public:
 
 	~Strategy();
 
-	void run();
+	void run(ofstream &out);
 };

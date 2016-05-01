@@ -51,6 +51,7 @@ Signal Stochastic::get_signal(int index) {
 	// otherwise we can proceed
 	double d = *(out_slowd + index);
 	// @TODO implement more complex stochastic analysis: use k, k/d crossovers, enter+exit overbought/oversold before deciding, etc.
+	// @TODO do more research on why flipping the < and > appears to be so effective?!
 	if (d < threshold_buy) return BUY;
 	if (d > threshold_sell) return SELL;
 	return NEUTRAL;

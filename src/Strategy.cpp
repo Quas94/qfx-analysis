@@ -4,6 +4,7 @@
 #include "Strategy.hpp"
 #include "Stochastic.hpp"
 #include "Trade.hpp"
+#include "ReverseIndicator.hpp"
 
 /**
  * A strategy contains one or more Indicators which will be used collectively in order to
@@ -15,8 +16,8 @@ Strategy::Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips, int
 	stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips), cooldown(cooldown) {
 
 	// initialise and insert a bunch of AbstractIndicator implementations here
-	Stochastic *stochastic = new Stochastic(parser);
-	indicators.push_back(stochastic);
+	indicators.push_back(new Stochastic(parser));
+	// indicators.push_back(new ReverseIndicator(new Stochastic(parser)));
 	// @TODO add more
 
 	// iterate through all candlesticks and run them by every TA tool
@@ -37,17 +38,17 @@ Strategy::~Strategy() {
 	}
 }
 
-void Strategy::print_indicators() {
-	cout << "[Indicators List]" << endl;
+void Strategy::print_indicators(ofstream &out) {
+	out << "[Indicators List]" << endl;
 	for (auto it = indicators.begin(); it != indicators.end(); it++) {
-		cout << (*it)->get_desc() << endl;
+		out << (*it)->get_desc() << endl;
 	}
 }
 
-void Strategy::run() {
-	cout << "[Strategy] SL = " << to_string(stop_loss_pips) << " / TP = " <<
+void Strategy::run(ofstream &out) {
+	out << "[Strategy] SL = " << to_string(stop_loss_pips) << " / TP = " <<
 		to_string(take_profit_pips) << endl;
-	print_indicators();
+	print_indicators(out);
 
 	// stores all currently open trades
 	vector<Trade*> open_trades;
@@ -85,7 +86,7 @@ void Strategy::run() {
 			}
 			// else if (i == num_candles - 1) {
 				// we're on the last candle of this dataset
-				//cout << "Held " << (current_position == LONG ? "long" : "short") << " position at end. Entry = " <<
+				// out << "Held " << (current_position == LONG ? "long" : "short") << " position at end. Entry = " <<
 				//	to_string(entry_price) << ", price at end = " << to_string(current_price) << endl;
 			// }
 		}
@@ -123,17 +124,15 @@ void Strategy::run() {
 		cooldown_remaining--;
 	}
 
-	cout << "Finished, about to clear open_trades()" << endl;
-
 	// if any trades still open, delete them
 	for (auto it = open_trades.begin(); it != open_trades.end(); it++) {
 		delete *it;
 	}
 	open_trades.clear();
 
-	cout << "Winners: " << num_trades_won << "/" << num_trades_closed << "(" <<
+	out << "Winners: " << num_trades_won << "/" << num_trades_closed << "(" <<
 		((int)((num_trades_won / (double)num_trades_closed) * 100)) << "%)" << endl;
-	cout << "Losers: " << num_trades_lost << "/" << num_trades_closed << endl;
-	cout << "[PIPS GAINED: " << to_string(net_pips) << "]" << endl;
-	cout << "=---------------------------------------------=" << endl;
+	out << "Losers: " << num_trades_lost << "/" << num_trades_closed << endl;
+	out << "[PIPS GAINED: " << to_string(net_pips) << "]" << endl;
+	out << "=---------------------------------------------=" << endl;
 }

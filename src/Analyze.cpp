@@ -23,6 +23,38 @@
 using namespace std;
 
 int main(int argc, char** argv) {
+	if (argc != 2) {
+		cout << "Usage: 'analyze.exe filename.ext" << endl;
+		return EXIT_FAILURE;
+	}
+
+	string output_file = argv[1];
+	cout << "Specified input file: " << output_file << endl;
+	// check if file exists and confirm overwrite
+	ifstream check_exists;
+	check_exists.open(output_file, ifstream::in);
+	if (check_exists.is_open()) { // file exists
+		string answer = "";
+		while (answer != "Y" && answer != "N") {
+			cout << "File already exists. Overwrite? (Y or N): ";
+			getline(cin, answer);
+			if (answer.size() == 1) {
+				if (answer[0] == 'y') answer = "Y";
+				else if (answer[0] == 'n') answer = "N";
+			}
+		}
+		if (answer == "N") {
+			cout << "App terminated" << endl;
+			return EXIT_FAILURE;
+		}
+	}
+	ofstream out;
+	out.open(output_file, ofstream::out);
+	if (out.fail()) {
+		cout << "Error: could not open the specified file for writing" << endl;
+		return EXIT_FAILURE;
+	}
+
 	SimpleDate start(2015, 7, 1);
 	SimpleDate end(2016, 3, 31);
 	Parser* parser = new Parser(start, end, Hour);
@@ -62,8 +94,8 @@ int main(int argc, char** argv) {
 	sl_tp_pairs.push_back(make_pair(75, 225));
 
 	for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {
-		Strategy *strategy = new Strategy(parser, it->first, it->second, 12);
-		strategy->run();
+		Strategy *strategy = new Strategy(parser, it->first, it->second, 4);
+		strategy->run(out);
 		delete strategy;
 	}
 	
