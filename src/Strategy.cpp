@@ -16,7 +16,8 @@ Strategy::Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips, int
 	stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips), cooldown(cooldown) {
 
 	// initialise and insert a bunch of AbstractIndicator implementations here
-	indicators.push_back(new Stochastic(parser));
+	indicators.push_back(new Stochastic(parser, 10, 90));
+	//indicators.push_back(new Stochastic(parser, 15, 85));
 	// indicators.push_back(new ReverseIndicator(new Stochastic(parser)));
 	// @TODO add more
 
@@ -39,17 +40,15 @@ Strategy::~Strategy() {
 }
 
 void Strategy::print_indicators(ofstream &out) {
-	out << "[Indicators List]" << endl;
+	out << "\"";
 	for (auto it = indicators.begin(); it != indicators.end(); it++) {
-		out << (*it)->get_desc() << endl;
+		if (it != indicators.begin()) out << " & ";
+		out << (*it)->get_desc();
 	}
+	out << "\",";
 }
 
 void Strategy::run(ofstream &out) {
-	out << "[Strategy] SL = " << to_string(stop_loss_pips) << " / TP = " <<
-		to_string(take_profit_pips) << endl;
-	print_indicators(out);
-
 	// stores all currently open trades
 	vector<Trade*> open_trades;
 
@@ -130,9 +129,11 @@ void Strategy::run(ofstream &out) {
 	}
 	open_trades.clear();
 
-	out << "Winners: " << num_trades_won << "/" << num_trades_closed << "(" <<
-		((int)((num_trades_won / (double)num_trades_closed) * 100)) << "%)" << endl;
-	out << "Losers: " << num_trades_lost << "/" << num_trades_closed << endl;
-	out << "[PIPS GAINED: " << to_string(net_pips) << "]" << endl;
-	out << "=---------------------------------------------=" << endl;
+	// print to csv output
+	// out << "Stop loss,Take profit,Indicator list and descriptions,Winners,Losers,Total trades," <<
+	// "Win %,Pips gained" << endl;
+	out << to_string(stop_loss_pips) << "," << to_string(take_profit_pips) << ",";
+	print_indicators(out);
+	out << num_trades_won << "," << num_trades_lost << "," << num_trades_closed << "," <<
+		((int)((num_trades_won / (double)num_trades_closed) * 100)) << "%," << to_string(net_pips) << endl;
 }

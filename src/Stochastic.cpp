@@ -6,15 +6,17 @@
 
 using namespace std;
 
-Stochastic::Stochastic(Parser *parser, int fastk, int slowk, int slowd) : AbstractIndicator(parser) {
+Stochastic::Stochastic(Parser *parser, int buy_threshold, int sell_threshold,
+	int fastk, int slowk, int slowd) : AbstractIndicator(parser) {
+
 	// @TODO be more memory efficient with array sizing
 	int max_candles = parser->get_max_candles();
 	this->out_slowk = new double[max_candles];
 	this->out_slowd = new double[max_candles];
 
 	// @TODO allow for customisation of stochastic interpretation settings
-	this->threshold_buy = 10; // typically 20
-	this->threshold_sell = 90; // typically 80
+	this->threshold_buy = buy_threshold; // typically 20
+	this->threshold_sell = sell_threshold; // typically 80
 	// @TODO allow for customisation of stochastic technical settings
 	this->fastk_period = fastk;
 	this->slowk_period = slowk;

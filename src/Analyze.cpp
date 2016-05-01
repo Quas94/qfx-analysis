@@ -93,6 +93,9 @@ int main(int argc, char** argv) {
 	sl_tp_pairs.push_back(make_pair(75, 150));
 	sl_tp_pairs.push_back(make_pair(75, 225));
 
+	// print first line of csv
+	out << "Stop loss,Take profit,Indicator list and descriptions,Winners,Losers,Total trades," <<
+		"Win %,Pips gained" << endl;
 	for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {
 		Strategy *strategy = new Strategy(parser, it->first, it->second, 4);
 		strategy->run(out);

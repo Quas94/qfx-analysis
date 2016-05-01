@@ -23,7 +23,8 @@ private:
 	double *out_slowd;
 
 public:
-	Stochastic(Parser *parser, int fastk = 14, int slowk = 3, int slowd = 3);
+	Stochastic(Parser *parser, int buy_threshold = 20, int sell_threshold = 80,
+		int fastk = 14, int slowk = 3, int slowd = 3);
 
 	~Stochastic();
 
