@@ -17,8 +17,8 @@ Strategy::Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips, int
 
 	// initialise and insert a bunch of AbstractIndicator implementations here
 	indicators.push_back(new Stochastic(parser, 10, 90));
-	//indicators.push_back(new Stochastic(parser, 15, 85));
-	// indicators.push_back(new ReverseIndicator(new Stochastic(parser)));
+	// indicators.push_back(new ReverseIndicator(new Stochastic(parser, 15, 85)));
+	// indicators.push_back(new ReverseIndicator(new Stochastic(parser, 10, 90)));
 	// @TODO add more
 
 	// iterate through all candlesticks and run them by every TA tool
@@ -130,10 +130,10 @@ void Strategy::run(ofstream &out) {
 	open_trades.clear();
 
 	// print to csv output
-	// out << "Stop loss,Take profit,Indicator list and descriptions,Winners,Losers,Total trades," <<
+	// out << "Indicator list and descriptions,Cooldown,Stop loss,Take profit,Winners,Losers,Total trades," <<
 	// "Win %,Pips gained" << endl;
-	out << to_string(stop_loss_pips) << "," << to_string(take_profit_pips) << ",";
 	print_indicators(out);
+	out << cooldown << "," << stop_loss_pips << "," << take_profit_pips << ",";
 	out << num_trades_won << "," << num_trades_lost << "," << num_trades_closed << "," <<
-		((int)((num_trades_won / (double)num_trades_closed) * 100)) << "%," << to_string(net_pips) << endl;
+		((int)((num_trades_won / (double)num_trades_closed) * 100)) << "%," << net_pips << endl;
 }

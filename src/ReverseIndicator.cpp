@@ -27,5 +27,5 @@ Signal ReverseIndicator::get_signal(int index) {
 
 // prints out a string description of the settings of this indicator
 string ReverseIndicator::get_desc() {
-	return "Reversed: " + internal_indicator->get_desc();
+	return "!!!REVERSED!!! " + internal_indicator->get_desc();
 }

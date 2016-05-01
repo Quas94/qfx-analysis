@@ -22,13 +22,30 @@
 
 using namespace std;
 
+inline bool valid_year(int year) {
+	return year >= 2011 && year <= 2016;
+}
+
+inline bool valid_month(int month) {
+	return month >= 1 && month <= 12;
+}
+
 int main(int argc, char** argv) {
-	if (argc != 2) {
-		cout << "Usage: 'analyze.exe filename.ext" << endl;
+	if (argc != 6) {
+		cout << "Usage: 'analyze.exe filename.csv startyear startmonth endyear endmonth" << endl;
 		return EXIT_FAILURE;
 	}
 
 	string output_file = argv[1];
+	int start_year = stoi(argv[2]);
+	int start_month = stoi(argv[3]);
+	int end_year = stoi(argv[4]);
+	int end_month = stoi(argv[5]);
+	if (!valid_year(start_year) || !valid_year(end_year) || !valid_month(start_month) || !valid_month(end_month)) {
+		cout << "Years must be between 2011-2016, and months must be between 1-12" << endl;
+		return EXIT_FAILURE;
+	}
+
 	cout << "Specified input file: " << output_file << endl;
 	// check if file exists and confirm overwrite
 	ifstream check_exists;
@@ -55,8 +72,8 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	SimpleDate start(2015, 7, 1);
-	SimpleDate end(2016, 3, 31);
+	SimpleDate start(start_year, start_month, 1);
+	SimpleDate end(end_year, end_month, 31);
 	Parser* parser = new Parser(start, end, Hour);
 	parser->parse();
 
@@ -81,25 +98,47 @@ int main(int argc, char** argv) {
 
 	// initialise our strategy setups
 	vector<pair<int, int> > sl_tp_pairs;
-	sl_tp_pairs.push_back(make_pair(20, 20));
-	sl_tp_pairs.push_back(make_pair(20, 40));
-	sl_tp_pairs.push_back(make_pair(20, 50));
+	sl_tp_pairs.push_back(make_pair(25, 25));
+	sl_tp_pairs.push_back(make_pair(25, 50));
+	sl_tp_pairs.push_back(make_pair(25, 75));
+	sl_tp_pairs.push_back(make_pair(25, 100));
+	sl_tp_pairs.push_back(make_pair(25, 125));
+	sl_tp_pairs.push_back(make_pair(25, 150));
+	sl_tp_pairs.push_back(make_pair(25, 200));
+	sl_tp_pairs.push_back(make_pair(25, 250));
+	sl_tp_pairs.push_back(make_pair(25, 300));
+	sl_tp_pairs.push_back(make_pair(50, 25));
 	sl_tp_pairs.push_back(make_pair(50, 50));
 	sl_tp_pairs.push_back(make_pair(50, 75));
 	sl_tp_pairs.push_back(make_pair(50, 100));
 	sl_tp_pairs.push_back(make_pair(50, 125));
 	sl_tp_pairs.push_back(make_pair(50, 150));
+	sl_tp_pairs.push_back(make_pair(50, 200));
+	sl_tp_pairs.push_back(make_pair(50, 250));
+	sl_tp_pairs.push_back(make_pair(50, 300));
 	sl_tp_pairs.push_back(make_pair(75, 75));
 	sl_tp_pairs.push_back(make_pair(75, 150));
 	sl_tp_pairs.push_back(make_pair(75, 225));
+	sl_tp_pairs.push_back(make_pair(75, 300));
+	sl_tp_pairs.push_back(make_pair(100, 25));
+	sl_tp_pairs.push_back(make_pair(100, 50));
+	sl_tp_pairs.push_back(make_pair(100, 75));
+	sl_tp_pairs.push_back(make_pair(100, 100));
+	sl_tp_pairs.push_back(make_pair(100, 200));
+	sl_tp_pairs.push_back(make_pair(100, 300));
+
+	// vector<int> cooldowns{ 1, 4, 12, 24 };
+	vector<int> cooldowns{ 24 };
 
 	// print first line of csv
-	out << "Stop loss,Take profit,Indicator list and descriptions,Winners,Losers,Total trades," <<
+	out << "Indicator list and descriptions,Cooldown,Stop loss,Take profit,Winners,Losers,Total trades," <<
 		"Win %,Pips gained" << endl;
 	for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {
-		Strategy *strategy = new Strategy(parser, it->first, it->second, 4);
-		strategy->run(out);
-		delete strategy;
+		for (auto i = cooldowns.begin(); i != cooldowns.end(); i++) {
+			Strategy *strategy = new Strategy(parser, it->first, it->second, *i);
+			strategy->run(out);
+			delete strategy;
+		}
 	}
 	
 	// shutdown TA_lib
