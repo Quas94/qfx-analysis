@@ -12,8 +12,8 @@
  */
 using namespace std;
 
-Strategy::Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips, int cooldown, const vector<AbstractIndicator*> *ind_ptrs) : parser(parser),
-	stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips), cooldown(cooldown) {
+Strategy::Strategy(Parser *parser, double risk_percent_per_trade, int stop_loss_pips, int take_profit_pips, int cooldown, const vector<AbstractIndicator*> *ind_ptrs) :
+	parser(parser), risk_percent_per_trade(risk_percent_per_trade), stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips), cooldown(cooldown) {
 
 	// add the indicators to the list
 	for (auto it = ind_ptrs->begin(); it != ind_ptrs->end(); it++) {
@@ -51,6 +51,14 @@ void Strategy::run(ofstream &out) {
 	// each index of this vector will represent one unit of time being tracked (currently, just 1 month) for the extra info columns
 	vector<int> extra_info_pips_gained;
 	vector<string> extra_info_blocknames;
+	vector<double> extra_info_account_sizes; // account sizes with respect to starting account size of 1.0, at the end of each block
+
+	// account sizing
+	double account_size = 1.0; // 1.0 = 100%
+	const double percent_loss = risk_percent_per_trade / 100.0;
+	const double percent_win = (((double) take_profit_pips) / stop_loss_pips) * percent_loss;
+	const double account_size_multiply_loss = 1 - percent_loss; // multiply account_size by this variable when we encounter a trade loss
+	const double account_size_multiply_win = 1 + percent_win; // multiply account_size by this variable when we encounter a trade win
 
 	// fetch candles and dates
 	int num_candles = parser->get_num_candles();
@@ -76,9 +84,11 @@ void Strategy::run(ofstream &out) {
 				int pip_change;
 				if (stopped) {
 					pip_change = -stop_loss_pips;
+					account_size *= account_size_multiply_loss;
 					num_trades_lost++;
 				} else { // profited
 					pip_change = take_profit_pips;
+					account_size *= account_size_multiply_win;
 					num_trades_won++;
 				}
 				net_pips += pip_change;
@@ -88,15 +98,19 @@ void Strategy::run(ofstream &out) {
 				// add to extra info
 				int cur_year = current_date->get_year();
 				// int cur_month = current_date->get_month();
-				if (prev_year != cur_year) { // currently, extra info will only be for years
+				if (prev_year != cur_year) { // new year
 					prev_year = cur_year;
 					// prev_month = cur_month;
 					extra_info_index++;
 					extra_info_pips_gained.push_back(pip_change);
 					extra_info_blocknames.push_back(to_string(cur_year));
+					extra_info_account_sizes.push_back(account_size);
+					// reset account_size to 1.0
+					account_size = 1.0;
 				} else {
 					// same year, just add on the net_pips
 					extra_info_pips_gained[extra_info_index] += pip_change;
+					extra_info_account_sizes[extra_info_index] = account_size;
 				}
 			} else {
 				it++;
@@ -143,16 +157,19 @@ void Strategy::run(ofstream &out) {
 	open_trades.clear();
 
 	// print to csv output
-	// out << "Indicator list and descriptions,Cooldown,Stop loss,Take profit,Winners,Losers,Total trades," <<
-	// "Win %,Pips gained" << endl;
 	print_indicators(out);
-	out << cooldown << "," << stop_loss_pips << "," << take_profit_pips << ",";
+	out << cooldown << "," << risk_percent_per_trade << "%," << stop_loss_pips << "," << take_profit_pips << ",";
 	out << num_trades_won << "," << num_trades_lost << "," << num_trades_closed << "," <<
 		((int)((num_trades_won / (double)num_trades_closed) * 100)) << "%," << net_pips;
 	// lastly, the extra info breakdown if there was more than 1 year
 	if (extra_info_blocknames.size() > 1) {
+		// pips profited from each particular year
 		for (unsigned int y = 0; y < extra_info_blocknames.size(); y++) {
 			out << "," << extra_info_pips_gained[y];
+		}
+		// account size at the end of each year
+		for (unsigned int y = 0; y < extra_info_account_sizes.size(); y++) {
+			out << "," << ((int) round(extra_info_account_sizes[y] * 100)) << "%";
 		}
 	}
 	// newline

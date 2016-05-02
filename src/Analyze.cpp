@@ -131,24 +131,31 @@ int main(int argc, char** argv) {
 	sl_tp_pairs.push_back(make_pair(100, 300));
 
 	// vector<int> cooldowns{ 1, 4, 12, 24 };
-	vector<int> cooldowns{ 4, 12, 24 };
+	vector<int> cooldowns{ 4 };
 
 	// indicators
 	vector<vector<AbstractIndicator*>*> indicator_groups;
-	indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new Stochastic(parser, 10, 90, 10, 6, 6)) });
-	indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new Stochastic(parser, 15, 85, 10, 6, 6)) });
+	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
+	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 15, 85) });
 	// indicators.push_back(new ReverseIndicator(new Stochastic(parser, 10, 90)));
 	// @TODO add more
 
+	// risk per trade
+	const double risk_percent_per_trade = 2.0;
+
 	// print first line of csv
-	out << "Indicator list and descriptions,Cooldown,Stop loss,Take profit,Winners,Losers,Total trades," <<
+	out << "Indicator list and descriptions,Cooldown,Risk per trade,Stop loss,Take profit,Winners,Losers,Total trades," <<
 		"Win %,Pips gained";
+	// print out years for extra info: pips gained per year
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
+	// print out years for extra info: account size at the end of each year
+	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
+	// out << ",Average % per year";
 	out << endl;
 	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
 		for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {
 			for (auto i = cooldowns.begin(); i != cooldowns.end(); i++) {
-				Strategy *strategy = new Strategy(parser, it->first, it->second, *i, *ig);
+				Strategy *strategy = new Strategy(parser, risk_percent_per_trade, it->first, it->second, *i, *ig);
 				strategy->run(out);
 				delete strategy;
 			}
