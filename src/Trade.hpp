@@ -11,13 +11,18 @@ enum Position {
 class Trade {
 private:
 	Position position;
+	SimpleDate entry_date;
 	double entry_price;
 	double stop_loss;
 	double take_profit;
 
 public:
-	Trade(Signal signal, double entry_price, int stop_loss_pips, int take_profit_pips);
+	Trade(Signal signal, const SimpleDate &entry_date, double entry_price, int stop_loss_pips, int take_profit_pips);
 
-	bool stopped_out(double at_price);
-	bool taken_profit(double at_price);
+	Position get_position() const;
+	SimpleDate get_entry_date() const;
+	double get_entry_price() const;
+
+	bool stopped_out(double at_price) const;
+	bool taken_profit(double at_price) const;
 };

@@ -2,8 +2,8 @@
 #include "AbstractIndicator.hpp"
 #include "Constants.hpp"
 
-Trade::Trade(Signal signal, double entry_price, int stop_loss_pips,
-	int take_profit_pips) : position(signal == BUY ? LONG : SHORT), entry_price(entry_price) {
+Trade::Trade(Signal signal, const SimpleDate &entry_date, double entry_price, int stop_loss_pips,
+	int take_profit_pips) : position(signal == BUY ? LONG : SHORT), entry_date(entry_date), entry_price(entry_price) {
 
 	if (signal != BUY && signal != SELL)
 		throw runtime_error("signal must be BUY or SELL when passed into Trade::Trade() constructor");
@@ -19,14 +19,26 @@ Trade::Trade(Signal signal, double entry_price, int stop_loss_pips,
 	}
 }
 
-bool Trade::stopped_out(double at_price) {
+Position Trade::get_position() const {
+	return position;
+}
+
+SimpleDate Trade::get_entry_date() const {
+	return entry_date;
+}
+
+double Trade::get_entry_price() const {
+	return entry_price;
+}
+
+bool Trade::stopped_out(double at_price) const {
 	if (position == LONG)
 		return at_price <= stop_loss;
 	else // position == SHORT
 		return at_price >= stop_loss;
 }
 
-bool Trade::taken_profit(double at_price) {
+bool Trade::taken_profit(double at_price) const {
 	if (position == LONG)
 		return at_price >= take_profit;
 	else // position == SHORT

@@ -15,6 +15,7 @@
 #include "AbstractIndicator.hpp"
 #include "Stochastic.hpp"
 #include "ReverseIndicator.hpp"
+#include "AlwaysBuy.hpp"
 
 #include "Constants.hpp"
 #include "Timeframe.hpp"
@@ -131,12 +132,15 @@ int main(int argc, char** argv) {
 	sl_tp_pairs.push_back(make_pair(100, 300));
 
 	// vector<int> cooldowns{ 1, 4, 12, 24 };
-	vector<int> cooldowns{ 4 };
+	vector<int> cooldowns{ 4, 8 };
 
 	// indicators
 	vector<vector<AbstractIndicator*>*> indicator_groups;
+	//indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
 	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
 	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 15, 85) });
+	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new AlwaysBuy(parser) });
+	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new AlwaysBuy(parser)) });
 	// indicators.push_back(new ReverseIndicator(new Stochastic(parser, 10, 90)));
 	// @TODO add more
 
@@ -150,7 +154,7 @@ int main(int argc, char** argv) {
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
 	// print out years for extra info: account size at the end of each year
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
-	// out << ",Average % per year";
+	out << ",Average % per year";
 	out << endl;
 	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
 		for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {

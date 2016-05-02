@@ -37,6 +37,10 @@ int SimpleDate::get_day() const {
 	return day;
 }
 
+string SimpleDate::to_string() const {
+	return std::to_string(year) + "-" + std::to_string(month) + "-" + std::to_string(day);
+}
+
 bool operator==(const SimpleDate &a, const SimpleDate &b) {
 	return a.year == b.year && a.month == b.month && a.day == b.day;
 }

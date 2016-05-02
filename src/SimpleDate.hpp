@@ -20,6 +20,7 @@ public:
 	int get_year() const;
 	int get_month() const;
 	int get_day() const;
+	string to_string() const;
 
 	friend bool operator==(const SimpleDate &a, const SimpleDate &b);
 	friend bool operator>(const SimpleDate &a, const SimpleDate &b);

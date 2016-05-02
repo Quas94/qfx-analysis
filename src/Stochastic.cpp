@@ -17,6 +17,8 @@ Stochastic::Stochastic(Parser *parser, int buy_threshold, int sell_threshold,
 	// @TODO allow for customisation of stochastic interpretation settings
 	this->threshold_buy = buy_threshold; // typically 20
 	this->threshold_sell = sell_threshold; // typically 80
+	cout << "Buy threshold is <" << threshold_buy << endl;
+	cout << "Sell threshold is >" << threshold_sell << endl;
 	// @TODO allow for customisation of stochastic technical settings
 	this->fastk_period = fastk;
 	this->slowk_period = slowk;
@@ -54,8 +56,8 @@ Signal Stochastic::get_signal(int index) {
 	double d = *(out_slowd + index);
 	// @TODO implement more complex stochastic analysis: use k, k/d crossovers, enter+exit overbought/oversold before deciding, etc.
 	// @TODO do more research on why flipping the < and > appears to be so effective?!
-	if (d < threshold_buy) return BUY;
-	if (d > threshold_sell) return SELL;
+	if (d <= threshold_buy) return BUY;
+	if (d >= threshold_sell) return SELL;
 	return NEUTRAL;
 }
 

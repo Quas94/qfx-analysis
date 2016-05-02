@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 
 #include "Constants.hpp"
 #include "Strategy.hpp"
@@ -91,6 +92,14 @@ void Strategy::run(ofstream &out) {
 					account_size *= account_size_multiply_win;
 					num_trades_won++;
 				}
+				/*
+				// debug code
+				out << trade->get_entry_date().to_string();
+				out << "," << (trade->get_position() == LONG ? "LONG" : "SHORT");
+				out << "," << trade->get_entry_price();
+				out << "," << current_price;
+				out << "," << (stopped ? "LOSS" : "WIN") << "," << account_size << endl;
+				*/
 				net_pips += pip_change;
 				// remove from vector and delete
 				it = open_trades.erase(it);
@@ -106,7 +115,7 @@ void Strategy::run(ofstream &out) {
 					extra_info_blocknames.push_back(to_string(cur_year));
 					extra_info_account_sizes.push_back(account_size);
 					// reset account_size to 1.0
-					account_size = 1.0;
+					account_size = (stopped ? account_size_multiply_loss : account_size_multiply_win);
 				} else {
 					// same year, just add on the net_pips
 					extra_info_pips_gained[extra_info_index] += pip_change;
@@ -141,7 +150,7 @@ void Strategy::run(ofstream &out) {
 			if (signal == BUY || signal == SELL) {
 				// actually do something here because all indicators showed same signal
 				double entry_price = current_price;
-				Trade *new_trade = new Trade(signal, current_price, stop_loss_pips, take_profit_pips);
+				Trade *new_trade = new Trade(signal, *current_date, current_price, stop_loss_pips, take_profit_pips);
 				open_trades.push_back(new_trade);
 				// refresh the cooldown
 				cooldown_remaining = cooldown;
@@ -161,17 +170,21 @@ void Strategy::run(ofstream &out) {
 	out << cooldown << "," << risk_percent_per_trade << "%," << stop_loss_pips << "," << take_profit_pips << ",";
 	out << num_trades_won << "," << num_trades_lost << "," << num_trades_closed << "," <<
 		((int)((num_trades_won / (double)num_trades_closed) * 100)) << "%," << net_pips;
-	// lastly, the extra info breakdown if there was more than 1 year
-	if (extra_info_blocknames.size() > 1) {
-		// pips profited from each particular year
-		for (unsigned int y = 0; y < extra_info_blocknames.size(); y++) {
-			out << "," << extra_info_pips_gained[y];
-		}
-		// account size at the end of each year
-		for (unsigned int y = 0; y < extra_info_account_sizes.size(); y++) {
-			out << "," << ((int) round(extra_info_account_sizes[y] * 100)) << "%";
-		}
+
+	// lastly, the extra info breakdown
+	// pips profited from each particular year
+	for (unsigned int y = 0; y < extra_info_blocknames.size(); y++) {
+		out << "," << extra_info_pips_gained[y];
 	}
+	// account size at the end of each year
+	double total = 0;
+	for (unsigned int y = 0; y < extra_info_account_sizes.size(); y++) {
+		out << "," << ((int) round(extra_info_account_sizes[y] * 100)) << "%";
+		total += extra_info_account_sizes[y];
+	}
+	total /= extra_info_account_sizes.size();
+	out << "," << ((int) round(total * 100));
+
 	// newline
 	out << endl;
 }
