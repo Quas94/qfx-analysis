@@ -13,4 +13,5 @@ qfx.rc
 resource.h
 
 ## other
+lib/ta_lib/
 results/
