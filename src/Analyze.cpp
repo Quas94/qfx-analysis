@@ -14,6 +14,7 @@
 #include "ta_libc.h"
 #include "AbstractIndicator.hpp"
 #include "Stochastic.hpp"
+#include "ReverseIndicator.hpp"
 
 #include "Constants.hpp"
 #include "Timeframe.hpp"
@@ -32,7 +33,7 @@ inline bool valid_month(int month) {
 
 int main(int argc, char** argv) {
 	if (argc != 6) {
-		cout << "Usage: 'analyze.exe filename.csv startyear startmonth endyear endmonth" << endl;
+		cout << "Usage: 'analyze.exe filename.csv startyear startmonth endyear endmonth'" << endl;
 		return EXIT_FAILURE;
 	}
 
@@ -46,7 +47,8 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	cout << "Specified input file: " << output_file << endl;
+	cout << "Specified output file: " << output_file << " - will be saved to ../results/" << endl;
+	output_file = "../results/" + output_file;
 	// check if file exists and confirm overwrite
 	ifstream check_exists;
 	check_exists.open(output_file, ifstream::in);
@@ -76,6 +78,7 @@ int main(int argc, char** argv) {
 	SimpleDate end(end_year, end_month, 31);
 	Parser* parser = new Parser(start, end, Hour);
 	parser->parse();
+	int num_years = end_year - start_year + 1; // for use with extra info
 
 	/*
 	cout << "After parsing, we have written " << parser->get_num_candles() << " candles" << endl;
@@ -128,17 +131,37 @@ int main(int argc, char** argv) {
 	sl_tp_pairs.push_back(make_pair(100, 300));
 
 	// vector<int> cooldowns{ 1, 4, 12, 24 };
-	vector<int> cooldowns{ 24 };
+	vector<int> cooldowns{ 4, 12, 24 };
+
+	// indicators
+	vector<vector<AbstractIndicator*>*> indicator_groups;
+	indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new Stochastic(parser, 10, 90, 10, 6, 6)) });
+	indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new Stochastic(parser, 15, 85, 10, 6, 6)) });
+	// indicators.push_back(new ReverseIndicator(new Stochastic(parser, 10, 90)));
+	// @TODO add more
 
 	// print first line of csv
 	out << "Indicator list and descriptions,Cooldown,Stop loss,Take profit,Winners,Losers,Total trades," <<
-		"Win %,Pips gained" << endl;
-	for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {
-		for (auto i = cooldowns.begin(); i != cooldowns.end(); i++) {
-			Strategy *strategy = new Strategy(parser, it->first, it->second, *i);
-			strategy->run(out);
-			delete strategy;
+		"Win %,Pips gained";
+	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
+	out << endl;
+	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
+		for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {
+			for (auto i = cooldowns.begin(); i != cooldowns.end(); i++) {
+				Strategy *strategy = new Strategy(parser, it->first, it->second, *i, *ig);
+				strategy->run(out);
+				delete strategy;
+			}
 		}
+	}
+
+	// delete indicators
+	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
+		vector<AbstractIndicator*> *group = *ig;
+		for (auto it = group->begin(); it != group->end(); it++) {
+			delete *it;
+		}
+		delete group;
 	}
 	
 	// shutdown TA_lib

@@ -7,6 +7,10 @@
 
 using namespace std;
 
+SimpleDate::SimpleDate() : SimpleDate(0, 0, 0) {
+	// do nothing
+}
+
 SimpleDate::SimpleDate(int year, int month, int day) : year(year), month(month), day(day) {
 	// all fields uniform initialised
 }
@@ -21,15 +25,15 @@ SimpleDate::SimpleDate(const string &line) {
 // copy constructor: default
 SimpleDate::SimpleDate(const SimpleDate &from) = default;
 
-int SimpleDate::get_year() {
+int SimpleDate::get_year() const {
 	return year;
 }
 
-int SimpleDate::get_month() {
+int SimpleDate::get_month() const {
 	return month;
 }
 
-int SimpleDate::get_day() {
+int SimpleDate::get_day() const {
 	return day;
 }
 

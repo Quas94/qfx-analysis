@@ -12,14 +12,13 @@
  */
 using namespace std;
 
-Strategy::Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips, int cooldown) : parser(parser),
+Strategy::Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips, int cooldown, const vector<AbstractIndicator*> *ind_ptrs) : parser(parser),
 	stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips), cooldown(cooldown) {
 
-	// initialise and insert a bunch of AbstractIndicator implementations here
-	indicators.push_back(new Stochastic(parser, 10, 90));
-	// indicators.push_back(new ReverseIndicator(new Stochastic(parser, 15, 85)));
-	// indicators.push_back(new ReverseIndicator(new Stochastic(parser, 10, 90)));
-	// @TODO add more
+	// add the indicators to the list
+	for (auto it = ind_ptrs->begin(); it != ind_ptrs->end(); it++) {
+		indicators.push_back(*it);
+	}
 
 	// iterate through all candlesticks and run them by every TA tool
 	for (auto it = indicators.begin(); it != indicators.end(); it++) {
@@ -31,12 +30,6 @@ Strategy::Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips, int
 	this->num_trades_closed = 0;
 	this->num_trades_lost = 0;
 	this->num_trades_won = 0;
-}
-
-Strategy::~Strategy() {
-	for (auto it = indicators.begin(); it != indicators.end(); it++) {
-		delete (*it);
-	}
 }
 
 void Strategy::print_indicators(ofstream &out) {
@@ -55,12 +48,22 @@ void Strategy::run(ofstream &out) {
 	// this value must be 0 or less before we can start looking for trades
 	// will be reset to be equal to 'cooldown' when a trade is made
 	int cooldown_remaining = 0;
+	// each index of this vector will represent one unit of time being tracked (currently, just 1 month) for the extra info columns
+	vector<int> extra_info_pips_gained;
+	vector<string> extra_info_blocknames;
 
-	// iterate through all candlesticks and apply strategy
+	// fetch candles and dates
 	int num_candles = parser->get_num_candles();
 	const double *close_prices = parser->get_close_prices();
+	const SimpleDate *date_tracker = parser->get_date_tracker();
+	// keep track of last line's month and year
+	int prev_month = 0;
+	int prev_year = 0;
+	int extra_info_index = -1;
+	// iterate through all candlesticks and apply strategy
 	for (int i = 0; i < num_candles; i++) {
 		double current_price = *(close_prices + i);
+		const SimpleDate *current_date = date_tracker + i;
 		// if we're in any positions, check if we hit stop loss or take profit
 		auto it = open_trades.begin();
 		while (it != open_trades.end()) {
@@ -70,24 +73,34 @@ void Strategy::run(ofstream &out) {
 			if (stopped || profited) {
 				// close out the position
 				num_trades_closed++;
+				int pip_change;
 				if (stopped) {
-					net_pips -= stop_loss_pips;
+					pip_change = -stop_loss_pips;
 					num_trades_lost++;
 				} else { // profited
-					net_pips += take_profit_pips;
+					pip_change = take_profit_pips;
 					num_trades_won++;
 				}
+				net_pips += pip_change;
 				// remove from vector and delete
 				it = open_trades.erase(it);
 				delete trade;
+				// add to extra info
+				int cur_year = current_date->get_year();
+				// int cur_month = current_date->get_month();
+				if (prev_year != cur_year) { // currently, extra info will only be for years
+					prev_year = cur_year;
+					// prev_month = cur_month;
+					extra_info_index++;
+					extra_info_pips_gained.push_back(pip_change);
+					extra_info_blocknames.push_back(to_string(cur_year));
+				} else {
+					// same year, just add on the net_pips
+					extra_info_pips_gained[extra_info_index] += pip_change;
+				}
 			} else {
 				it++;
 			}
-			// else if (i == num_candles - 1) {
-				// we're on the last candle of this dataset
-				// out << "Held " << (current_position == LONG ? "long" : "short") << " position at end. Entry = " <<
-				//	to_string(entry_price) << ", price at end = " << to_string(current_price) << endl;
-			// }
 		}
 
 		// if cooldown_remaining is 0 or less, we can check for new trades
@@ -135,5 +148,13 @@ void Strategy::run(ofstream &out) {
 	print_indicators(out);
 	out << cooldown << "," << stop_loss_pips << "," << take_profit_pips << ",";
 	out << num_trades_won << "," << num_trades_lost << "," << num_trades_closed << "," <<
-		((int)((num_trades_won / (double)num_trades_closed) * 100)) << "%," << net_pips << endl;
+		((int)((num_trades_won / (double)num_trades_closed) * 100)) << "%," << net_pips;
+	// lastly, the extra info breakdown if there was more than 1 year
+	if (extra_info_blocknames.size() > 1) {
+		for (unsigned int y = 0; y < extra_info_blocknames.size(); y++) {
+			out << "," << extra_info_pips_gained[y];
+		}
+	}
+	// newline
+	out << endl;
 }

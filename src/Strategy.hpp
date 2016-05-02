@@ -27,9 +27,7 @@ private:
 
 public:
 
-	Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips, int cooldown);
-
-	~Strategy();
+	Strategy(Parser *parser, int stop_loss_pips, int take_profit_pips, int cooldown, const vector<AbstractIndicator*> *ind_ptrs);
 
 	void run(ofstream &out);
 };

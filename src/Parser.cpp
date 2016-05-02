@@ -17,6 +17,7 @@ current_date(start_date), current_file_year(start_date.get_year()), timeframe(ti
 	high_prices = new double[max_candles];
 	low_prices = new double[max_candles];
 	close_prices = new double[max_candles];
+	date_tracker = new SimpleDate[max_candles];
 }
 
 Parser::~Parser() {
@@ -24,14 +25,17 @@ Parser::~Parser() {
 	delete high_prices;
 	delete low_prices;
 	delete close_prices;
+	delete date_tracker;
 }
 
-void Parser::create_candle(double open, double high, double low, double close) {
+void Parser::create_candle(double open, double high, double low, double close, const SimpleDate &current_date) {
 	// add to prices
 	open_prices[num_candles] = open;
 	high_prices[num_candles] = high;
 	low_prices[num_candles] = low;
 	close_prices[num_candles] = close;
+	// add to month tracker
+	date_tracker[num_candles] = current_date;
 	// increment candle count
 	num_candles++;
 }
@@ -58,6 +62,10 @@ const double * Parser::get_low_prices() const {
 
 const double * Parser::get_close_prices() const {
 	return close_prices;
+}
+
+const SimpleDate * Parser::get_date_tracker() const {
+	return date_tracker;
 }
 
 /**
@@ -173,7 +181,7 @@ void Parser::parse() {
 					throw runtime_error("lines_read (" + to_string(lines_read) + ") > timeframe ("
 						+ to_string(timeframe) + ") somehow");
 				// add the candle
-				create_candle(candle_open, candle_high, candle_low, candle_close);
+				create_candle(candle_open, candle_high, candle_low, candle_close, current_date);
 				// reset flags
 				lines_read = 0;
 				candle_open = NONE;
