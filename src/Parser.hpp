@@ -11,6 +11,7 @@ using namespace std;
 class Parser {
 private:
 	ifstream ifs;
+	const string currency_pair;
 
 	const SimpleDate start_date;
 	const SimpleDate end_date;
@@ -30,7 +31,7 @@ private:
 
 public:
 
-	Parser(SimpleDate start_year, SimpleDate end_year, Timeframe timeframe);
+	Parser(string currency_pair, SimpleDate start_year, SimpleDate end_year, Timeframe timeframe);
 
 	~Parser();
 

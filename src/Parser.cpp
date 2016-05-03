@@ -9,8 +9,10 @@
 
 using namespace std;
 
-Parser::Parser(SimpleDate start_date, SimpleDate end_date, Timeframe timeframe) : start_date(start_date), end_date(end_date),
-current_date(start_date), current_file_year(start_date.get_year()), timeframe(timeframe), num_candles(0) {
+Parser::Parser(string currency_pair, SimpleDate start_date, SimpleDate end_date, Timeframe timeframe) :
+currency_pair(currency_pair), start_date(start_date), end_date(end_date), current_date(start_date),
+current_file_year(start_date.get_year()), timeframe(timeframe), num_candles(0) {
+
 	if (start_date > end_date) throw runtime_error("start_date can't be later than end_date");
 	max_candles = max_candle_bars(start_date.get_year(), end_date.get_year(), timeframe);
 	open_prices = new double[max_candles];
@@ -87,7 +89,7 @@ bool Parser::next_year() {
 	// proceed to open the next year
 	string file_path;
 	string current_year = to_string(current_file_year);
-	file_path = "./" + current_year + ".csv";
+	file_path = "./" + currency_pair + "/" + current_year + ".csv";
 	ifs.open(file_path, fstream::in);
 	if (ifs.fail()) {
 		string message = "Failed to open data file for " + current_year;

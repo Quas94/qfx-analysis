@@ -33,16 +33,17 @@ inline bool valid_month(int month) {
 }
 
 int main(int argc, char** argv) {
-	if (argc != 6) {
-		cout << "Usage: 'analyze.exe filename.csv startyear startmonth endyear endmonth'" << endl;
+	if (argc != 7) {
+		cout << "Usage: 'analyze.exe filename.csv currency_pair startyear startmonth endyear endmonth'" << endl;
 		return EXIT_FAILURE;
 	}
 
 	string output_file = argv[1];
-	int start_year = stoi(argv[2]);
-	int start_month = stoi(argv[3]);
-	int end_year = stoi(argv[4]);
-	int end_month = stoi(argv[5]);
+	string currency_pair = argv[2];
+	int start_year = stoi(argv[3]);
+	int start_month = stoi(argv[4]);
+	int end_year = stoi(argv[5]);
+	int end_month = stoi(argv[6]);
 	if (!valid_year(start_year) || !valid_year(end_year) || !valid_month(start_month) || !valid_month(end_month)) {
 		cout << "Years must be between 2011-2016, and months must be between 1-12" << endl;
 		return EXIT_FAILURE;
@@ -77,7 +78,7 @@ int main(int argc, char** argv) {
 
 	SimpleDate start(start_year, start_month, 1);
 	SimpleDate end(end_year, end_month, 31);
-	Parser* parser = new Parser(start, end, Hour);
+	Parser* parser = new Parser(currency_pair, start, end, Hour);
 	parser->parse();
 	int num_years = end_year - start_year + 1; // for use with extra info
 
@@ -101,35 +102,13 @@ int main(int argc, char** argv) {
 	cout << "Initialised TA_lib successfully" << endl;
 
 	// initialise our strategy setups
+	vector<int> pip_sizes{ 25, 50, 75, 100, 125, 150, 200, 250, 300 };
 	vector<pair<int, int> > sl_tp_pairs;
-	sl_tp_pairs.push_back(make_pair(25, 25));
-	sl_tp_pairs.push_back(make_pair(25, 50));
-	sl_tp_pairs.push_back(make_pair(25, 75));
-	sl_tp_pairs.push_back(make_pair(25, 100));
-	sl_tp_pairs.push_back(make_pair(25, 125));
-	sl_tp_pairs.push_back(make_pair(25, 150));
-	sl_tp_pairs.push_back(make_pair(25, 200));
-	sl_tp_pairs.push_back(make_pair(25, 250));
-	sl_tp_pairs.push_back(make_pair(25, 300));
-	sl_tp_pairs.push_back(make_pair(50, 25));
-	sl_tp_pairs.push_back(make_pair(50, 50));
-	sl_tp_pairs.push_back(make_pair(50, 75));
-	sl_tp_pairs.push_back(make_pair(50, 100));
-	sl_tp_pairs.push_back(make_pair(50, 125));
-	sl_tp_pairs.push_back(make_pair(50, 150));
-	sl_tp_pairs.push_back(make_pair(50, 200));
-	sl_tp_pairs.push_back(make_pair(50, 250));
-	sl_tp_pairs.push_back(make_pair(50, 300));
-	sl_tp_pairs.push_back(make_pair(75, 75));
-	sl_tp_pairs.push_back(make_pair(75, 150));
-	sl_tp_pairs.push_back(make_pair(75, 225));
-	sl_tp_pairs.push_back(make_pair(75, 300));
-	sl_tp_pairs.push_back(make_pair(100, 25));
-	sl_tp_pairs.push_back(make_pair(100, 50));
-	sl_tp_pairs.push_back(make_pair(100, 75));
-	sl_tp_pairs.push_back(make_pair(100, 100));
-	sl_tp_pairs.push_back(make_pair(100, 200));
-	sl_tp_pairs.push_back(make_pair(100, 300));
+	for (unsigned int i = 0; i < pip_sizes.size(); i++) {
+		for (unsigned int j = i; j < pip_sizes.size(); j++) {
+			sl_tp_pairs.push_back(make_pair(pip_sizes[i], pip_sizes[j]));
+		}
+	}
 
 	// vector<int> cooldowns{ 1, 4, 12, 24 };
 	vector<int> cooldowns{ 4, 8 };
@@ -154,7 +133,7 @@ int main(int argc, char** argv) {
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
 	// print out years for extra info: account size at the end of each year
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
-	out << ",Average % per year";
+	out << ",Average % per year,Best month,Worst month,Winning months,Losing months";
 	out << endl;
 	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
 		for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {

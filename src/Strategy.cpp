@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <limits>
 
 #include "Constants.hpp"
 #include "Strategy.hpp"
@@ -60,6 +61,12 @@ void Strategy::run(ofstream &out) {
 	const double percent_win = (((double) take_profit_pips) / stop_loss_pips) * percent_loss;
 	const double account_size_multiply_loss = 1 - percent_loss; // multiply account_size by this variable when we encounter a trade loss
 	const double account_size_multiply_win = 1 + percent_win; // multiply account_size by this variable when we encounter a trade win
+	// account sizing monthly
+	double account_size_month = 1.0;
+	double month_worst = numeric_limits<double>::max();
+	double month_best = 0;
+	int num_winning_months = 0;
+	int num_losing_months = 0;
 
 	// fetch candles and dates
 	int num_candles = parser->get_num_candles();
@@ -86,10 +93,12 @@ void Strategy::run(ofstream &out) {
 				if (stopped) {
 					pip_change = -stop_loss_pips;
 					account_size *= account_size_multiply_loss;
+					account_size_month *= account_size_multiply_loss;
 					num_trades_lost++;
 				} else { // profited
 					pip_change = take_profit_pips;
 					account_size *= account_size_multiply_win;
+					account_size_month *= account_size_multiply_win;
 					num_trades_won++;
 				}
 				/*
@@ -106,7 +115,7 @@ void Strategy::run(ofstream &out) {
 				delete trade;
 				// add to extra info
 				int cur_year = current_date->get_year();
-				// int cur_month = current_date->get_month();
+				int cur_month = current_date->get_month();
 				if (prev_year != cur_year) { // new year
 					prev_year = cur_year;
 					// prev_month = cur_month;
@@ -120,6 +129,26 @@ void Strategy::run(ofstream &out) {
 					// same year, just add on the net_pips
 					extra_info_pips_gained[extra_info_index] += pip_change;
 					extra_info_account_sizes[extra_info_index] = account_size;
+				}
+				// month is calc'd separately
+				if (prev_month != cur_month) {
+					// if prev_month != 0, then save the month to the results
+					if (prev_month != 0) {
+						if (account_size_month < month_worst)
+							month_worst = account_size_month;
+						if (account_size_month > month_best)
+							month_best = account_size_month;
+						if (account_size_month > 1.0) {
+							// winning month
+							num_winning_months++;
+						} else {
+							// profit of zero or negative is losing month
+							num_losing_months++;
+						}
+					}
+					// reset vars
+					prev_month = cur_month;
+					account_size_month = 1.0;
 				}
 			} else {
 				it++;
@@ -159,6 +188,18 @@ void Strategy::run(ofstream &out) {
 		cooldown_remaining--;
 	}
 
+	// update the last month
+	if (account_size_month < month_worst)
+		month_worst = account_size_month;
+	if (account_size_month > month_best)
+		month_best = account_size_month;
+	if (account_size_month > 1.0) {
+		num_winning_months++;
+	} else {
+		num_losing_months++;
+	}
+	// end of updating last month
+
 	// if any trades still open, delete them
 	for (auto it = open_trades.begin(); it != open_trades.end(); it++) {
 		delete *it;
@@ -184,7 +225,13 @@ void Strategy::run(ofstream &out) {
 	}
 	total /= extra_info_account_sizes.size();
 	out << "," << ((int) round(total * 100));
-
+	// worst month and best month
+	out << "," << (month_best * 100) << "%";
+	out << "," << (month_worst * 100) << "%";
+	// winning months and losing months
+	int total_months = num_winning_months + num_losing_months;
+	out << "," << num_winning_months;
+	out << "," << num_losing_months << " / " << total_months;
 	// newline
 	out << endl;
 }
