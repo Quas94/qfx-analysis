@@ -18,12 +18,12 @@ const int max_candle_bars(int start_year, int end_year, Timeframe tf) {
 		return answer_day * 6;
 	case Hour:
 		return answer_day * 24;
-	case HalfHour:
-		return answer_day * 48;
-	case QuarterHour:
-		return answer_day * 96;
-	case Minute:
-		return answer_day * 1440;
+	//case HalfHour:
+	//	return answer_day * 48;
+	//case QuarterHour:
+	//	return answer_day * 96;
+	//case Minute:
+	//	return answer_day * 1440;
 	default:
 		throw runtime_error("Invalid timeframe: " + to_string(tf));
 	}

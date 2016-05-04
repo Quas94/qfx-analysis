@@ -8,6 +8,7 @@ const char COMMA = ',';
 const char SPACE = ' ';
 const char DASH = '-';
 const char COLON = ':';
+const char PERIOD = '.';
 
 const string CURRENT_PAIR = "EUR_USD";
 

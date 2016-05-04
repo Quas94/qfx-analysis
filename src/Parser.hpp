@@ -4,6 +4,7 @@
 
 #include "Timeframe.hpp"
 #include "SimpleDate.hpp"
+#include "Util.hpp"
 
 using namespace std;
 
@@ -12,13 +13,12 @@ class Parser {
 private:
 	ifstream ifs;
 	const string currency_pair;
+	const Timeframe timeframe;
 
 	const SimpleDate start_date;
 	const SimpleDate end_date;
 	SimpleDate current_date; // where we're up to in the file we're parsing through
-	int current_file_year; // the year of the file we've currently opened (see Parser->next_year())
 
-	const Timeframe timeframe;
 	int max_candles;
 	int num_candles;
 	double *open_prices;
@@ -45,12 +45,6 @@ public:
 	const double * get_low_prices() const;
 	const double * get_close_prices() const;
 	const SimpleDate * get_date_tracker() const;
-
-	/**
-	* Checks if the next file should be opened, and if so, opens it, and returns true.
-	* If the next file should not be opened (ie. we're past the end_date), this function returns false.
-	*/
-	bool next_year();
 
 	void parse();
 };

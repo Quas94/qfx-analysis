@@ -127,13 +127,13 @@ int main(int argc, char** argv) {
 	const double risk_percent_per_trade = 2.0;
 
 	// print first line of csv
-	out << "Indicator list and descriptions,Cooldown,Risk per trade,Stop loss,Take profit,Winners,Losers,Total trades," <<
+	out << "Indicator list and descriptions,CD,Risk,Stop loss,Take profit,Winners,Losers,Total trades," <<
 		"Win %,Pips gained";
 	// print out years for extra info: pips gained per year
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
 	// print out years for extra info: account size at the end of each year
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
-	out << ",Average % per year,Best month,Worst month,Winning months,Losing months";
+	out << ",Avg Yearly %,Best month,Worst month,Winning months,Losing months";
 	out << endl;
 	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
 		for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {

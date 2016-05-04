@@ -16,7 +16,7 @@ SimpleDate::SimpleDate(int year, int month, int day) : year(year), month(month),
 }
 
 SimpleDate::SimpleDate(const string &line) {
-	vector<string> line_date_split = split(line, DASH);
+	vector<string> line_date_split = Util::split(line, PERIOD);
 	year = stoi(line_date_split[0]);
 	month = stoi(line_date_split[1]);
 	day = stoi(line_date_split[2]);
