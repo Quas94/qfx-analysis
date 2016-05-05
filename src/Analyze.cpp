@@ -102,8 +102,8 @@ int main(int argc, char** argv) {
 	cout << "Initialised TA_lib successfully" << endl;
 
 	// initialise our strategy setups
-	vector<int> pip_sizes{ 25, 50, 75, 100, 125, 150, 200, 250, 300 };
 	vector<pair<int, int> > sl_tp_pairs;
+	vector<int> pip_sizes{ 25, 50, 75, 100, 125, 150, 200, 250, 300 };
 	for (unsigned int i = 0; i < pip_sizes.size(); i++) {
 		for (unsigned int j = i; j < pip_sizes.size(); j++) {
 			sl_tp_pairs.push_back(make_pair(pip_sizes[i], pip_sizes[j]));
@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
 	// indicators
 	vector<vector<AbstractIndicator*>*> indicator_groups;
 	//indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
-	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
+	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
 	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 15, 85) });
 	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new AlwaysBuy(parser) });
 	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new AlwaysBuy(parser)) });
@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
 	// print out years for extra info: account size at the end of each year
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
-	out << ",Avg Yearly %,Best month,Worst month,Winning months,Losing months";
+	out << ",Avg Yearly %,Status,Best month,Worst month,Winning months,Losing months";
 	out << endl;
 	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
 		for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {

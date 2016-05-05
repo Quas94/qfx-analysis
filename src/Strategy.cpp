@@ -7,6 +7,7 @@
 #include "Stochastic.hpp"
 #include "Trade.hpp"
 #include "ReverseIndicator.hpp"
+#include "Account.hpp"
 
 /**
  * A strategy contains one or more Indicators which will be used collectively in order to
@@ -14,8 +15,9 @@
  */
 using namespace std;
 
-Strategy::Strategy(Parser *parser, double risk_percent_per_trade, int stop_loss_pips, int take_profit_pips, int cooldown, const vector<AbstractIndicator*> *ind_ptrs) :
-	parser(parser), risk_percent_per_trade(risk_percent_per_trade), stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips), cooldown(cooldown) {
+Strategy::Strategy(Parser *parser, double risk_percent_per_trade, int stop_loss_pips, int take_profit_pips, int cooldown,
+	const vector<AbstractIndicator*> *ind_ptrs) : parser(parser), risk_percent_per_trade(risk_percent_per_trade),
+	stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips), cooldown(cooldown) {
 
 	// add the indicators to the list
 	for (auto it = ind_ptrs->begin(); it != ind_ptrs->end(); it++) {
@@ -26,12 +28,6 @@ Strategy::Strategy(Parser *parser, double risk_percent_per_trade, int stop_loss_
 	for (auto it = indicators.begin(); it != indicators.end(); it++) {
 		(*it)->process();
 	}
-
-	// clear outcome logs
-	this->net_pips = 0;
-	this->num_trades_closed = 0;
-	this->num_trades_lost = 0;
-	this->num_trades_won = 0;
 }
 
 void Strategy::print_indicators(ofstream &out) {
@@ -44,121 +40,94 @@ void Strategy::print_indicators(ofstream &out) {
 }
 
 void Strategy::run(ofstream &out) {
-	// stores all currently open trades
-	vector<Trade*> open_trades;
+	int info_index = -1;
+	vector<int> info_pips_gained;
+	vector<string> info_period_names;
+	vector<double> info_account_sizes;
 
-	// this value must be 0 or less before we can start looking for trades
-	// will be reset to be equal to 'cooldown' when a trade is made
+	Account account(1000.0); // start off with 1k funds
 	int cooldown_remaining = 0;
-	// each index of this vector will represent one unit of time being tracked (currently, just 1 month) for the extra info columns
-	vector<int> extra_info_pips_gained;
-	vector<string> extra_info_blocknames;
-	vector<double> extra_info_account_sizes; // account sizes with respect to starting account size of 1.0, at the end of each block
-
-	// account sizing
-	double account_size = 1.0; // 1.0 = 100%
-	const double percent_loss = risk_percent_per_trade / 100.0;
-	const double percent_win = (((double) take_profit_pips) / stop_loss_pips) * percent_loss;
-	const double account_size_multiply_loss = 1 - percent_loss; // multiply account_size by this variable when we encounter a trade loss
-	const double account_size_multiply_win = 1 + percent_win; // multiply account_size by this variable when we encounter a trade win
-	// account sizing monthly
-	double account_size_month = 1.0;
-	double month_worst = numeric_limits<double>::max();
-	double month_best = 0;
+	double year_start_equity = account.get_balance(); // balance == equity at beginning
+	double month_start_equity = account.get_balance(); // balance == equity at beginning
+	double month_best_percent = 0;
+	double month_worst_percent = numeric_limits<double>::max();
 	int num_winning_months = 0;
 	int num_losing_months = 0;
 
-	// fetch candles and dates
 	int num_candles = parser->get_num_candles();
-	const double *close_prices = parser->get_close_prices();
-	const SimpleDate *date_tracker = parser->get_date_tracker();
-	// keep track of last line's month and year
-	int prev_month = 0;
-	int prev_year = 0;
-	int extra_info_index = -1;
-	// iterate through all candlesticks and apply strategy
+	const double *prices_high = parser->get_high_prices();
+	const double *prices_low = parser->get_low_prices();
+	const double *prices_close = parser->get_close_prices();
+	const SimpleDate *prices_dates = parser->get_date_tracker();
+
+	int prev_year = 0,
+		prev_month = 0;
+
+	int total_trades_won = 0;
+	int total_trades_lost = 0;
+	// can calc total pips from the above 2 variables at the end
+
+	double updated_equity;
+
 	for (int i = 0; i < num_candles; i++) {
-		double current_price = *(close_prices + i);
-		const SimpleDate *current_date = date_tracker + i;
-		// if we're in any positions, check if we hit stop loss or take profit
-		auto it = open_trades.begin();
-		while (it != open_trades.end()) {
-			Trade *trade = *it;
-			bool stopped = trade->stopped_out(current_price);
-			bool profited = trade->taken_profit(current_price);
-			if (stopped || profited) {
-				// close out the position
-				num_trades_closed++;
-				int pip_change;
-				if (stopped) {
-					pip_change = -stop_loss_pips;
-					account_size *= account_size_multiply_loss;
-					account_size_month *= account_size_multiply_loss;
-					num_trades_lost++;
-				} else { // profited
-					pip_change = take_profit_pips;
-					account_size *= account_size_multiply_win;
-					account_size_month *= account_size_multiply_win;
-					num_trades_won++;
-				}
-				/*
-				// debug code
-				out << trade->get_entry_date().to_string();
-				out << "," << (trade->get_position() == LONG ? "LONG" : "SHORT");
-				out << "," << trade->get_entry_price();
-				out << "," << current_price;
-				out << "," << (stopped ? "LOSS" : "WIN") << "," << account_size << endl;
-				*/
-				net_pips += pip_change;
-				// remove from vector and delete
-				it = open_trades.erase(it);
-				delete trade;
-				// add to extra info
-				int cur_year = current_date->get_year();
-				int cur_month = current_date->get_month();
-				if (prev_year != cur_year) { // new year
-					prev_year = cur_year;
-					// prev_month = cur_month;
-					extra_info_index++;
-					extra_info_pips_gained.push_back(pip_change);
-					extra_info_blocknames.push_back(to_string(cur_year));
-					extra_info_account_sizes.push_back(account_size);
-					// reset account_size to 1.0
-					account_size = (stopped ? account_size_multiply_loss : account_size_multiply_win);
-				} else {
-					// same year, just add on the net_pips
-					extra_info_pips_gained[extra_info_index] += pip_change;
-					extra_info_account_sizes[extra_info_index] = account_size;
-				}
-				// month is calc'd separately
-				if (prev_month != cur_month) {
-					// if prev_month != 0, then save the month to the results
-					if (prev_month != 0) {
-						if (account_size_month < month_worst)
-							month_worst = account_size_month;
-						if (account_size_month > month_best)
-							month_best = account_size_month;
-						if (account_size_month > 1.0) {
-							// winning month
-							num_winning_months++;
-						} else {
-							// profit of zero or negative is losing month
-							num_losing_months++;
-						}
-					}
-					// reset vars
-					prev_month = cur_month;
-					account_size_month = 1.0;
-				}
-			} else {
-				it++;
+		const double current_high = *(prices_high + i);
+		const double current_low = *(prices_low + i);
+		const double current_close = *(prices_close + i);
+		const SimpleDate *current_date = prices_dates + i;
+
+		// inform the account object that the price reached the specified high and low, in this candlebar
+		pair<int, int> won_and_lost = account.update_price(current_high, current_low);
+		int won = won_and_lost.first;
+		int lost = won_and_lost.second;
+		int pip_change = (won * take_profit_pips) - (lost * stop_loss_pips);
+		total_trades_won += won;
+		total_trades_lost += lost;
+
+		updated_equity = account.calc_equity(current_close);
+
+		int current_year = current_date->get_year();
+		int current_month = current_date->get_month();
+		// update year stats
+		if (current_year != prev_year) {
+			// new year
+			info_index++;
+			info_pips_gained.push_back(pip_change);
+			info_period_names.push_back(to_string(current_year));
+			double year_percent_change = (updated_equity / year_start_equity) * 100;
+			// if (prev_year == 0) cout << "first year_percent_change = " << year_percent_change << endl;
+			info_account_sizes.push_back(year_percent_change);
+			// update prev_year
+			prev_year = current_year;
+			// cout << "year_start_equity being updated from " << year_start_equity << " -> " << updated_equity << endl;
+			year_start_equity = updated_equity;
+		} else {
+			// same year, just add
+			info_pips_gained[info_index] += pip_change;
+			info_account_sizes[info_index] = (updated_equity / year_start_equity) * 100;
+		}
+		// update month stats
+		if (current_month != prev_month) {
+			if (prev_month != 0) {
+				// this isn't the very first month
+				double month_percent_change = (updated_equity / month_start_equity) * 100;
+				if (month_percent_change < month_worst_percent)
+					month_worst_percent = month_percent_change;
+				if (month_percent_change > month_best_percent)
+					month_best_percent = month_percent_change;
+				if (month_percent_change > 100)
+					num_winning_months++;
+				else
+					num_losing_months++;
+				// set month_start_equity to current equity
+				// cout << "cur_month = " << current_month << ", prev_month = " << prev_month << ", ";
+				// cout << "month_start_equity being updated from " << month_start_equity << " -> " << updated_equity << endl;
+				month_start_equity = updated_equity;
 			}
+			prev_month = current_month;
 		}
 
-		// if cooldown_remaining is 0 or less, we can check for new trades
-		if (cooldown_remaining <= 0) {
-			// make a trade if all indicators in ta_list come to the same conclusion
-			// regardless of whether or not we already have trade(s) open
+		// start looking for new trades if we are no longer on cooldown
+		if (cooldown_remaining) {
 			Signal signal = _NULL;
 			for (auto it = indicators.begin(); it != indicators.end(); it++) {
 				AbstractIndicator *indicator = *it;
@@ -177,10 +146,10 @@ void Strategy::run(ofstream &out) {
 			}
 			// check what signal we ended up with
 			if (signal == BUY || signal == SELL) {
-				// actually do something here because all indicators showed same signal
-				double entry_price = current_price;
-				Trade *new_trade = new Trade(signal, *current_date, current_price, stop_loss_pips, take_profit_pips);
-				open_trades.push_back(new_trade);
+				// go ahead and make trade because all indicators showed same signal
+				account.make_trade(signal, updated_equity, risk_percent_per_trade, *current_date, current_close,
+					stop_loss_pips, take_profit_pips);
+
 				// refresh the cooldown
 				cooldown_remaining = cooldown;
 			}
@@ -188,50 +157,62 @@ void Strategy::run(ofstream &out) {
 		cooldown_remaining--;
 	}
 
-	// update the last month
-	if (account_size_month < month_worst)
-		month_worst = account_size_month;
-	if (account_size_month > month_best)
-		month_best = account_size_month;
-	if (account_size_month > 1.0) {
+	// update last month
+	// cout << "[LAST] prev_month = " << prev_month << ", ";
+	// cout << "month_start_equity being updated from " << month_start_equity << " -> " << updated_equity << endl;
+	double month_percent_change = (updated_equity / month_start_equity) * 100;
+	if (month_percent_change < month_worst_percent)
+		month_worst_percent = month_percent_change;
+	if (month_percent_change > month_best_percent)
+		month_best_percent = month_percent_change;
+	if (month_percent_change > 100)
 		num_winning_months++;
-	} else {
+	else
 		num_losing_months++;
-	}
-	// end of updating last month
 
-	// if any trades still open, delete them
-	for (auto it = open_trades.begin(); it != open_trades.end(); it++) {
-		delete *it;
-	}
-	open_trades.clear();
+	// notify account that the strategy is finished
+	account.clear_trades();
+
+	// summation calculations
+	int net_pips = (total_trades_won * take_profit_pips) - (total_trades_lost * stop_loss_pips);
+	int total_trades = total_trades_won + total_trades_lost;
 
 	// print to csv output
 	print_indicators(out);
 	out << cooldown << "," << risk_percent_per_trade << "%," << stop_loss_pips << "," << take_profit_pips << ",";
-	out << num_trades_won << "," << num_trades_lost << "," << num_trades_closed << "," <<
-		((int)((num_trades_won / (double)num_trades_closed) * 100)) << "%," << net_pips;
+	out << total_trades_won << "," << total_trades_lost << "," << total_trades << "," <<
+		((int)((total_trades_won / (double)total_trades) * 100)) << "%," << net_pips;
 
 	// lastly, the extra info breakdown
 	// pips profited from each particular year
-	for (unsigned int y = 0; y < extra_info_blocknames.size(); y++) {
-		out << "," << extra_info_pips_gained[y];
+	for (unsigned int y = 0; y < info_period_names.size(); y++) {
+		out << "," << info_pips_gained[y];
 	}
 	// account size at the end of each year
 	double total = 0;
-	for (unsigned int y = 0; y < extra_info_account_sizes.size(); y++) {
-		out << "," << ((int) round(extra_info_account_sizes[y] * 100)) << "%";
-		total += extra_info_account_sizes[y];
+	bool noteworthy = true;
+	bool semi = true;
+	for (unsigned int y = 0; y < info_account_sizes.size(); y++) {
+		/*
+		int acc_sz = (int)round(info_account_sizes[y] * 100);
+		if (acc_sz < 80 || (acc_sz < 100 && !noteworthy)) semi = false;
+		if (acc_sz < 100) noteworthy = false;
+		out << "," << acc_sz << "%";
+		total += info_account_sizes[y];
+		*/
+		total += info_account_sizes[y];
+		out << "," << info_account_sizes[y];
 	}
-	total /= extra_info_account_sizes.size();
-	out << "," << ((int) round(total * 100));
+	total /= info_account_sizes.size();
+	out << "," << total;
+	out << "," << (noteworthy ? "x" : (semi ? "." : ""));
 	// worst month and best month
-	out << "," << (month_best * 100) << "%";
-	out << "," << (month_worst * 100) << "%";
+	out << "," << (month_best_percent) << "%";
+	out << "," << (month_worst_percent) << "%";
 	// winning months and losing months
 	int total_months = num_winning_months + num_losing_months;
 	out << "," << num_winning_months;
-	out << "," << num_losing_months << " / " << total_months;
+	out << ",\"" << num_losing_months << " out of " << total_months << "\"";
 	// newline
 	out << endl;
 }

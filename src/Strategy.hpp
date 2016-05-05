@@ -17,12 +17,6 @@ private:
 	const int take_profit_pips;
 	vector<AbstractIndicator*> indicators;
 	const int cooldown; // number of blocks (Parser Timeframes) to wait before considering another trade
-	
-	// outcome related fields
-	int net_pips;
-	int num_trades_closed;
-	int num_trades_lost;
-	int num_trades_won;
 
 	void print_indicators(ofstream &out);
 
