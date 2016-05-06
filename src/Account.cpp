@@ -4,7 +4,7 @@
 
 using namespace std;
 
-Account::Account(double starting_balance) : balance(starting_balance) {
+Account::Account(double starting_balance) : balance(starting_balance), num_warnings(0) {
 	// nothing to do
 }
 
@@ -45,6 +45,9 @@ pair<int, int> Account::update_price(double high, double low) {
 				// losing trade
 				balance -= trade->get_losses();
 				lost++;
+				// inc warning if error
+				if (result == ERROR)
+					num_warnings++;
 			}
 			// free memory
 			delete trade;
@@ -72,4 +75,13 @@ void Account::clear_trades() {
 		delete *it;
 	}
 	trades.clear();
+}
+
+void Account::set_failed() {
+	clear_trades();
+	balance = 0;
+}
+
+int Account::get_num_warnings() {
+	return num_warnings;
 }

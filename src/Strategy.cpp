@@ -45,7 +45,8 @@ void Strategy::run(ofstream &out) {
 	vector<string> info_period_names;
 	vector<double> info_account_sizes;
 
-	Account account(1000.0); // start off with 1k funds
+	const double initial_balance = 1000;
+	Account account(initial_balance); // start off with 1k funds
 	int cooldown_remaining = 0;
 	double year_start_equity = account.get_balance(); // balance == equity at beginning
 	double month_start_equity = account.get_balance(); // balance == equity at beginning
@@ -74,6 +75,8 @@ void Strategy::run(ofstream &out) {
 		const double current_low = *(prices_low + i);
 		const double current_close = *(prices_close + i);
 		const SimpleDate *current_date = prices_dates + i;
+		const int current_year = current_date->get_year();
+		const int current_month = current_date->get_month();
 
 		// inform the account object that the price reached the specified high and low, in this candlebar
 		pair<int, int> won_and_lost = account.update_price(current_high, current_low);
@@ -85,31 +88,36 @@ void Strategy::run(ofstream &out) {
 
 		updated_equity = account.calc_equity(current_close);
 
-		int current_year = current_date->get_year();
-		int current_month = current_date->get_month();
+		// if at any point, equity falls below 10 dollars, set it to zero
+		if (updated_equity < (initial_balance / 10)) {
+			account.set_failed();
+			updated_equity = 0;
+		}
+
 		// update year stats
+		double year_percent_change = (year_start_equity == 0) ? 0 : ((updated_equity / year_start_equity) * 100);
 		if (current_year != prev_year) {
 			// new year
 			info_index++;
 			info_pips_gained.push_back(pip_change);
 			info_period_names.push_back(to_string(current_year));
-			double year_percent_change = (updated_equity / year_start_equity) * 100;
 			// if (prev_year == 0) cout << "first year_percent_change = " << year_percent_change << endl;
 			info_account_sizes.push_back(year_percent_change);
 			// update prev_year
+			//cout << "in " << prev_year << ", equity went from from " << year_start_equity << " -> " <<
+			//	updated_equity << ", year_percent_change = " << year_percent_change << endl;
 			prev_year = current_year;
-			// cout << "year_start_equity being updated from " << year_start_equity << " -> " << updated_equity << endl;
 			year_start_equity = updated_equity;
 		} else {
 			// same year, just add
 			info_pips_gained[info_index] += pip_change;
-			info_account_sizes[info_index] = (updated_equity / year_start_equity) * 100;
+			info_account_sizes[info_index] = year_percent_change;
 		}
 		// update month stats
 		if (current_month != prev_month) {
 			if (prev_month != 0) {
 				// this isn't the very first month
-				double month_percent_change = (updated_equity / month_start_equity) * 100;
+				double month_percent_change = (month_start_equity == 0) ? 0 : ((updated_equity / month_start_equity) * 100);
 				if (month_percent_change < month_worst_percent)
 					month_worst_percent = month_percent_change;
 				if (month_percent_change > month_best_percent)
@@ -127,7 +135,7 @@ void Strategy::run(ofstream &out) {
 		}
 
 		// start looking for new trades if we are no longer on cooldown
-		if (cooldown_remaining) {
+		if (cooldown_remaining <= 0) {
 			Signal signal = _NULL;
 			for (auto it = indicators.begin(); it != indicators.end(); it++) {
 				AbstractIndicator *indicator = *it;
@@ -192,19 +200,22 @@ void Strategy::run(ofstream &out) {
 	double total = 0;
 	bool noteworthy = true;
 	bool semi = true;
+	bool bust = false;
+	int lowest = numeric_limits<int>::max();
 	for (unsigned int y = 0; y < info_account_sizes.size(); y++) {
-		/*
-		int acc_sz = (int)round(info_account_sizes[y] * 100);
+		int acc_sz = (int)round(info_account_sizes[y]);
+		if (acc_sz == 0) bust = true;
 		if (acc_sz < 80 || (acc_sz < 100 && !noteworthy)) semi = false;
 		if (acc_sz < 100) noteworthy = false;
 		out << "," << acc_sz << "%";
 		total += info_account_sizes[y];
-		*/
-		total += info_account_sizes[y];
-		out << "," << info_account_sizes[y];
+		if (acc_sz < lowest) lowest = acc_sz;
 	}
 	total /= info_account_sizes.size();
-	out << "," << total;
+	if (bust)
+		total = 0;
+	out << "," << total << "%";
+	out << "," << lowest << "%";
 	out << "," << (noteworthy ? "x" : (semi ? "." : ""));
 	// worst month and best month
 	out << "," << (month_best_percent) << "%";
@@ -212,7 +223,8 @@ void Strategy::run(ofstream &out) {
 	// winning months and losing months
 	int total_months = num_winning_months + num_losing_months;
 	out << "," << num_winning_months;
-	out << ",\"" << num_losing_months << " out of " << total_months << "\"";
+	out << ",\"" << num_losing_months << " / " << total_months << ".\"";
+	out << "," << account.get_num_warnings();
 	// newline
 	out << endl;
 }

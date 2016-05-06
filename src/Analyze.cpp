@@ -103,6 +103,7 @@ int main(int argc, char** argv) {
 
 	// initialise our strategy setups
 	vector<pair<int, int> > sl_tp_pairs;
+	//vector<int> pip_sizes{ 25 };
 	vector<int> pip_sizes{ 25, 50, 75, 100, 125, 150, 200, 250, 300 };
 	for (unsigned int i = 0; i < pip_sizes.size(); i++) {
 		for (unsigned int j = i; j < pip_sizes.size(); j++) {
@@ -115,9 +116,10 @@ int main(int argc, char** argv) {
 
 	// indicators
 	vector<vector<AbstractIndicator*>*> indicator_groups;
-	//indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
-	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
+	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 5, 95) });
+	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
 	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 15, 85) });
+	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 49, 51) });
 	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new AlwaysBuy(parser) });
 	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new AlwaysBuy(parser)) });
 	// indicators.push_back(new ReverseIndicator(new Stochastic(parser, 10, 90)));
@@ -127,13 +129,13 @@ int main(int argc, char** argv) {
 	const double risk_percent_per_trade = 2.0;
 
 	// print first line of csv
-	out << "Indicator list and descriptions,CD,Risk,Stop loss,Take profit,Winners,Losers,Total trades," <<
+	out << "Indicator list and descriptions,CD,Risk,SL,TP,Winners,Losers,Total trades," <<
 		"Win %,Pips gained";
 	// print out years for extra info: pips gained per year
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
 	// print out years for extra info: account size at the end of each year
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
-	out << ",Avg Yearly %,Status,Best month,Worst month,Winning months,Losing months";
+	out << ",Avg Yearly %,Worst Year,Status,Best month,Worst month,Winning months,Losing months, Warnings";
 	out << endl;
 	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
 		for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {

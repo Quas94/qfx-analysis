@@ -62,6 +62,6 @@ Signal Stochastic::get_signal(int index) {
 }
 
 string Stochastic::get_desc() {
-	return "Stochastic (" + to_string(fastk_period) + ", " + to_string(slowk_period) + ", " + to_string(slowd_period) +
-		") / Buy = " + to_string(threshold_buy) + ", Sell = " + to_string(threshold_sell);
+	return "STOCH(" + to_string(fastk_period) + ", " + to_string(slowk_period) + ", " + to_string(slowd_period) +
+		") Buy " + to_string(threshold_buy) + ", Sell " + to_string(threshold_sell);
 }

@@ -10,6 +10,8 @@ private:
 
 	vector<Trade*> trades;
 
+	int num_warnings;
+
 public:
 
 	Account(double starting_balance);
@@ -23,4 +25,8 @@ public:
 	double calc_equity(double close);
 
 	void clear_trades();
+
+	void set_failed();
+
+	int get_num_warnings();
 };
