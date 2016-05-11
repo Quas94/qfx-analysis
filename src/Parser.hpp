@@ -35,6 +35,8 @@ public:
 
 	~Parser();
 
+	string get_currency_pair() const;
+
 	void create_candle(double open, double high, double low, double close, const SimpleDate &current_date);
 
 	int get_num_candles() const;

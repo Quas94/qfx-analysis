@@ -29,6 +29,10 @@ Parser::~Parser() {
 	delete date_tracker;
 }
 
+string Parser::get_currency_pair() const {
+	return currency_pair;
+}
+
 void Parser::create_candle(double open, double high, double low, double close, const SimpleDate &current_date) {
 	// add to prices
 	open_prices[num_candles] = open;

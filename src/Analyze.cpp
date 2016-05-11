@@ -25,7 +25,7 @@
 using namespace std;
 
 inline bool valid_year(int year) {
-	return year >= 2011 && year <= 2016;
+	return year >= 2006 && year <= 2016;
 }
 
 inline bool valid_month(int month) {
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 	int end_year = stoi(argv[5]);
 	int end_month = stoi(argv[6]);
 	if (!valid_year(start_year) || !valid_year(end_year) || !valid_month(start_month) || !valid_month(end_month)) {
-		cout << "Years must be between 2011-2016, and months must be between 1-12" << endl;
+		cout << "Years must be between 2006-2016, and months must be between 1-12" << endl;
 		return EXIT_FAILURE;
 	}
 
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
 	// initialise our strategy setups
 	vector<pair<int, int> > sl_tp_pairs;
 	//vector<int> pip_sizes{ 25 };
-	vector<int> pip_sizes{ 25, 50, 75, 100, 125, 150, 200, 250, 300 };
+	vector<int> pip_sizes{ 25, 50, 75, 100 };
 	for (unsigned int i = 0; i < pip_sizes.size(); i++) {
 		for (unsigned int j = i; j < pip_sizes.size(); j++) {
 			sl_tp_pairs.push_back(make_pair(pip_sizes[i], pip_sizes[j]));
@@ -112,13 +112,15 @@ int main(int argc, char** argv) {
 	}
 
 	// vector<int> cooldowns{ 1, 4, 12, 24 };
-	vector<int> cooldowns{ 4, 8 };
+	vector<int> cooldowns{ 4, 6, 8 };
 
 	// indicators
 	vector<vector<AbstractIndicator*>*> indicator_groups;
 	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 5, 95) });
 	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
 	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 15, 85) });
+	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new Stochastic(parser, 5, 95)) });
+	//indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 20, 80) });
 	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 49, 51) });
 	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new AlwaysBuy(parser) });
 	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new AlwaysBuy(parser)) });
@@ -126,16 +128,15 @@ int main(int argc, char** argv) {
 	// @TODO add more
 
 	// risk per trade
-	const double risk_percent_per_trade = 2.0;
+	const double risk_percent_per_trade = 2.5;
 
 	// print first line of csv
 	out << "Indicator list and descriptions,CD,Risk,SL,TP,Winners,Losers,Total trades," <<
-		"Win %,Pips gained";
-	// print out years for extra info: pips gained per year
-	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
+		"Win %,Expected Win %";
+	// for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
 	// print out years for extra info: account size at the end of each year
 	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
-	out << ",Avg Yearly %,Worst Year,Status,Best month,Worst month,Winning months,Losing months, Warnings";
+	out << ",Final %,Worst Year,Status,Best month,Worst month,Winning months,Losing months, Warnings";
 	out << endl;
 	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
 		for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {

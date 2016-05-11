@@ -32,7 +32,7 @@ private:
 
 public:
 	Trade(Signal signal, double balance_on_entry, double risk_percentage, const SimpleDate &entry_date,
-		double entry_price, int stop_loss_pips, int take_profit_pips);
+		double entry_price, int stop_loss_pips, int take_profit_pips, bool is_jpy_pair);
 
 	Position get_position() const;
 	SimpleDate get_entry_date() const;

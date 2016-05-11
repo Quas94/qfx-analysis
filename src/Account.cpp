@@ -9,9 +9,9 @@ Account::Account(double starting_balance) : balance(starting_balance), num_warni
 }
 
 void Account::make_trade(Signal signal, double balance, double risk, const SimpleDate &entry_date,
-	double entry, int stop_loss, int take_profit) {
+	double entry, int stop_loss, int take_profit, bool jpy_pair) {
 
-	Trade *trade = new Trade(signal, balance, risk, entry_date, entry, stop_loss, take_profit);
+	Trade *trade = new Trade(signal, balance, risk, entry_date, entry, stop_loss, take_profit, jpy_pair);
 	trades.push_back(trade);
 }
 

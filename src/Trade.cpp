@@ -3,8 +3,8 @@
 #include "Constants.hpp"
 
 Trade::Trade(Signal signal, double balance_on_entry, double risk_percentage, const SimpleDate &entry_date,
-	double entry_price, int stop_loss_pips, int take_profit_pips) : position(signal == BUY ? LONG : SHORT),
-	entry_date(entry_date), entry_price(entry_price), jpy_currency(false), stop_loss_pips(stop_loss_pips),
+	double entry_price, int stop_loss_pips, int take_profit_pips, bool is_jpy) : position(signal == BUY ? LONG : SHORT),
+	entry_date(entry_date), entry_price(entry_price), jpy_currency(is_jpy), stop_loss_pips(stop_loss_pips),
 	take_profit_pips(take_profit_pips) {
 
 	if (signal != BUY && signal != SELL)

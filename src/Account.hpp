@@ -17,7 +17,7 @@ public:
 	Account(double starting_balance);
 
 	void make_trade(Signal signal, double balance, double risk, const SimpleDate &entry_date,
-		double entry, int stop_loss, int take_profit);
+		double entry, int stop_loss, int take_profit, bool jpy_pair);
 
 	pair<int, int> update_price(double high, double low);
 

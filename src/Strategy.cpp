@@ -40,8 +40,10 @@ void Strategy::print_indicators(ofstream &out) {
 }
 
 void Strategy::run(ofstream &out) {
+	// determine if jpy pair
+	bool is_jpy_pair = (parser->get_currency_pair().find(JPY) != string::npos);
+
 	int info_index = -1;
-	vector<int> info_pips_gained;
 	vector<string> info_period_names;
 	vector<double> info_account_sizes;
 
@@ -99,7 +101,6 @@ void Strategy::run(ofstream &out) {
 		if (current_year != prev_year) {
 			// new year
 			info_index++;
-			info_pips_gained.push_back(pip_change);
 			info_period_names.push_back(to_string(current_year));
 			// if (prev_year == 0) cout << "first year_percent_change = " << year_percent_change << endl;
 			info_account_sizes.push_back(year_percent_change);
@@ -110,7 +111,6 @@ void Strategy::run(ofstream &out) {
 			year_start_equity = updated_equity;
 		} else {
 			// same year, just add
-			info_pips_gained[info_index] += pip_change;
 			info_account_sizes[info_index] = year_percent_change;
 		}
 		// update month stats
@@ -156,7 +156,7 @@ void Strategy::run(ofstream &out) {
 			if (signal == BUY || signal == SELL) {
 				// go ahead and make trade because all indicators showed same signal
 				account.make_trade(signal, updated_equity, risk_percent_per_trade, *current_date, current_close,
-					stop_loss_pips, take_profit_pips);
+					stop_loss_pips, take_profit_pips, is_jpy_pair);
 
 				// refresh the cooldown
 				cooldown_remaining = cooldown;
@@ -182,22 +182,21 @@ void Strategy::run(ofstream &out) {
 	account.clear_trades();
 
 	// summation calculations
-	int net_pips = (total_trades_won * take_profit_pips) - (total_trades_lost * stop_loss_pips);
+	//int net_pips = (total_trades_won * take_profit_pips) - (total_trades_lost * stop_loss_pips);
 	int total_trades = total_trades_won + total_trades_lost;
 
 	// print to csv output
 	print_indicators(out);
 	out << cooldown << "," << risk_percent_per_trade << "%," << stop_loss_pips << "," << take_profit_pips << ",";
 	out << total_trades_won << "," << total_trades_lost << "," << total_trades << "," <<
-		((int)((total_trades_won / (double)total_trades) * 100)) << "%," << net_pips;
+		((int)((total_trades_won / (double)total_trades) * 100)) << "%";
+	// calculate expected win percentage
+	out << "," << ((int) (((double)stop_loss_pips) / (stop_loss_pips + take_profit_pips) * 100)) << "%";
+	// out << "," << net_pips;
 
 	// lastly, the extra info breakdown
-	// pips profited from each particular year
-	for (unsigned int y = 0; y < info_period_names.size(); y++) {
-		out << "," << info_pips_gained[y];
-	}
 	// account size at the end of each year
-	double total = 0;
+	double final_multiplier = 1.0;
 	bool noteworthy = true;
 	bool semi = true;
 	bool bust = false;
@@ -207,14 +206,11 @@ void Strategy::run(ofstream &out) {
 		if (acc_sz == 0) bust = true;
 		if (acc_sz < 80 || (acc_sz < 100 && !noteworthy)) semi = false;
 		if (acc_sz < 100) noteworthy = false;
-		out << "," << acc_sz << "%";
-		total += info_account_sizes[y];
 		if (acc_sz < lowest) lowest = acc_sz;
+		out << "," << acc_sz << "%";
+		final_multiplier *= (info_account_sizes[y] / 100);
 	}
-	total /= info_account_sizes.size();
-	if (bust)
-		total = 0;
-	out << "," << total << "%";
+	out << "," << ((int) (final_multiplier * 100)) << "%";
 	out << "," << lowest << "%";
 	out << "," << (noteworthy ? "x" : (semi ? "." : ""));
 	// worst month and best month
