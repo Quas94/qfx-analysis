@@ -16,6 +16,7 @@
 #include "Stochastic.hpp"
 #include "ReverseIndicator.hpp"
 #include "AlwaysBuy.hpp"
+#include "MovingAverageTrend.hpp"
 
 #include "Constants.hpp"
 #include "Timeframe.hpp"
@@ -116,9 +117,10 @@ int main(int argc, char** argv) {
 
 	// indicators
 	vector<vector<AbstractIndicator*>*> indicator_groups;
-	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 5, 95) });
-	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90) });
-	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 15, 85) });
+	AbstractIndicator *mat = (AbstractIndicator*) new MovingAverageTrend(parser, false, 20, 50, 100);
+	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 5, 95), mat });
+	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90), mat });
+	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 15, 85), mat });
 	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new Stochastic(parser, 5, 95)) });
 	//indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 20, 80) });
 	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 49, 51) });
@@ -149,6 +151,9 @@ int main(int argc, char** argv) {
 	}
 
 	// delete indicators
+	// @TODO figure out how to re-use indicator instances above and then delete here without multiple deletions
+	// on same pointer
+	/*
 	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
 		vector<AbstractIndicator*> *group = *ig;
 		for (auto it = group->begin(); it != group->end(); it++) {
@@ -156,6 +161,7 @@ int main(int argc, char** argv) {
 		}
 		delete group;
 	}
+	*/
 	
 	// shutdown TA_lib
 	if (TA_Shutdown() != TA_SUCCESS) {
