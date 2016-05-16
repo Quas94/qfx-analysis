@@ -121,8 +121,9 @@ int main(int argc, char** argv) {
 	// vector<int> cooldowns{ 1, 4, 12, 24 };
 	vector<int> cooldowns{ 4, 8 };
 
-	// risk per trade
+	// risk per trade and move stop
 	const double risk_percent_per_trade = 2.0;
+	const bool move_stop = false;
 
 	SimpleDate start(start_year, start_month, 1);
 	SimpleDate end(end_year, end_month, 31);
@@ -165,7 +166,8 @@ int main(int argc, char** argv) {
 		for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
 			for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {
 				for (auto i = cooldowns.begin(); i != cooldowns.end(); i++) {
-					Strategy *strategy = new Strategy(parser, risk_percent_per_trade, it->first, it->second, *i, *ig);
+					Strategy *strategy = new Strategy(parser, risk_percent_per_trade, it->first,
+						it->second, *i, *ig, move_stop);
 					strategy->run(out);
 					delete strategy;
 				}

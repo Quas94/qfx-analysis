@@ -9,38 +9,35 @@ Account::Account(double starting_balance) : balance(starting_balance), num_warni
 }
 
 void Account::make_trade(Signal signal, double balance, double risk, const SimpleDate &entry_date,
-	double entry, int stop_loss, int take_profit, bool jpy_pair) {
+	double entry, int stop_loss, int take_profit, bool jpy_pair, bool move_stop) {
 
-	Trade *trade = new Trade(signal, balance, risk, entry_date, entry, stop_loss, take_profit, jpy_pair);
+	Trade *trade = new Trade(signal, balance, risk, entry_date, entry, stop_loss, take_profit, jpy_pair, move_stop);
 	trades.push_back(trade);
 }
 
 // notifies the account that the current price has reached the given high and low
 // this method will then stop-loss or take-profit any trades that are applicable
-pair<int, int> Account::update_price(double high, double low) {
+pair<pair<int, int>, int> Account::update_price(double high, double low) {
 	auto it = trades.begin();
 	int won = 0,
+		neutral = 0,
 		lost = 0;
 	while (it != trades.end()) {
 		Trade *trade = *it;
 		TradeResult result = trade->check_high_low(high, low);
-		/*
-		if (result == ERROR) {
-			// when trade hits both SL and TP because high-low difference is very high
-			// cout << "WARNING: trade->update_price(" << high << ", " << low << ") returned ERROR!" << endl;
-			// treat as loss
-			lost++;
-			it++;
-		} else */
 		if (result == ACTIVE) {
 			// do nothing, let the trade continue running its course
 			it++;
 		} else {
+			// unless trade is still active, we remove it
 			it = trades.erase(it);
 			if (result == TAKE_PROFIT) {
 				// winning trade
 				balance += trade->get_winnings();
 				won++;
+			} else if (result == BREAK_EVEN) {
+				// no change to balance
+				neutral++;
 			} else { // result == STOP_LOSS || result == ERROR
 				// losing trade
 				balance -= trade->get_losses();
@@ -53,7 +50,7 @@ pair<int, int> Account::update_price(double high, double low) {
 			delete trade;
 		}
 	}
-	return make_pair(won, lost);
+	return make_pair(make_pair(won, lost), neutral);
 }
 
 double Account::get_balance() {

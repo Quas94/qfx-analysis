@@ -3,9 +3,9 @@
 #include "Constants.hpp"
 
 Trade::Trade(Signal signal, double balance_on_entry, double risk_percentage, const SimpleDate &entry_date,
-	double entry_price, int stop_loss_pips, int take_profit_pips, bool is_jpy) : position(signal == BUY ? LONG : SHORT),
-	entry_date(entry_date), entry_price(entry_price), jpy_currency(is_jpy), stop_loss_pips(stop_loss_pips),
-	take_profit_pips(take_profit_pips) {
+	double entry_price, int stop_loss_pips, int take_profit_pips, bool is_jpy, bool move_stop) :
+	position(signal == BUY ? LONG : SHORT), entry_date(entry_date), entry_price(entry_price), jpy_currency(is_jpy),
+	stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips), move_stop(move_stop), move_stop_done(false) {
 
 	if (signal != BUY && signal != SELL)
 		throw runtime_error("signal must be BUY or SELL when passed into Trade::Trade() constructor");
@@ -19,9 +19,11 @@ Trade::Trade(Signal signal, double balance_on_entry, double risk_percentage, con
 	if (signal == BUY) {
 		stop_loss = entry_price - stop_loss_diff;
 		take_profit = entry_price + take_profit_diff;
+		move_stop_price = entry_price + stop_loss_diff;
 	} else { // signal == SELL
 		stop_loss = entry_price + stop_loss_diff;
 		take_profit = entry_price - take_profit_diff;
+		move_stop_price = entry_price - stop_loss_diff;
 	}
 }
 
@@ -61,20 +63,32 @@ bool Trade::taken_profit(double at_price) const {
 		return at_price <= take_profit;
 }
 
-TradeResult Trade::check_high_low(double high, double low) const {
+TradeResult Trade::check_high_low(double high, double low) {
 	bool sl,
 		 tp;
 	if (position == LONG) {
+		// move stop to break-even if flag is set
+		if (move_stop && !move_stop_done && high >= move_stop_price) {
+			stop_loss = entry_price;
+			move_stop_done = true;
+		}
+		// then check sl and tp
 		sl = stopped_out(low);
 		tp = taken_profit(high);
 	} else { // position == SHORT
+		// move stop to break-even if flag is set
+		if (move_stop && !move_stop_done && low <= move_stop_price) {
+			stop_loss = entry_price;
+			move_stop_done = true;
+		}
+		// then check sl and tp
 		sl = stopped_out(high);
 		tp = taken_profit(low);
 	}
 	if (sl && tp)
 		return ERROR;
 	if (sl)
-		return STOP_LOSS;
+		return move_stop_done ? BREAK_EVEN : STOP_LOSS;
 	if (tp)
 		return TAKE_PROFIT;
 

@@ -16,8 +16,9 @@
 using namespace std;
 
 Strategy::Strategy(Parser *parser, double risk_percent_per_trade, int stop_loss_pips, int take_profit_pips, int cooldown,
-	const vector<AbstractIndicator*> *ind_ptrs) : parser(parser), risk_percent_per_trade(risk_percent_per_trade),
-	stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips), cooldown(cooldown) {
+	const vector<AbstractIndicator*> *ind_ptrs, bool move_stop) : parser(parser),
+	risk_percent_per_trade(risk_percent_per_trade), stop_loss_pips(stop_loss_pips), take_profit_pips(take_profit_pips),
+	cooldown(cooldown), move_stop(move_stop) {
 
 	// add the indicators to the list
 	for (auto it = ind_ptrs->begin(); it != ind_ptrs->end(); it++) {
@@ -70,6 +71,7 @@ void Strategy::run(ofstream &out) {
 
 	int total_trades_won = 0;
 	int total_trades_lost = 0;
+	int total_trades_neutral = 0;
 	// can calc total pips from the above 2 variables at the end
 
 	double updated_equity;
@@ -83,12 +85,14 @@ void Strategy::run(ofstream &out) {
 		const int current_month = current_date->get_month();
 
 		// inform the account object that the price reached the specified high and low, in this candlebar
-		pair<int, int> won_and_lost = account.update_price(current_high, current_low);
-		int won = won_and_lost.first;
-		int lost = won_and_lost.second;
+		pair<pair<int, int>, int> won_neutral_lost = account.update_price(current_high, current_low);
+		int won = won_neutral_lost.first.first;
+		int lost = won_neutral_lost.first.second;
+		int neutral = won_neutral_lost.second;
 		int pip_change = (won * take_profit_pips) - (lost * stop_loss_pips);
 		total_trades_won += won;
 		total_trades_lost += lost;
+		total_trades_neutral += neutral;
 
 		updated_equity = account.calc_equity(current_close);
 
@@ -159,7 +163,7 @@ void Strategy::run(ofstream &out) {
 			if (signal == BUY || signal == SELL) {
 				// go ahead and make trade because all indicators showed same signal
 				account.make_trade(signal, updated_equity, risk_percent_per_trade, *current_date, current_close,
-					stop_loss_pips, take_profit_pips, is_jpy_pair);
+					stop_loss_pips, take_profit_pips, is_jpy_pair, move_stop);
 
 				// refresh the cooldown
 				cooldown_remaining = cooldown;
@@ -187,7 +191,7 @@ void Strategy::run(ofstream &out) {
 
 	// summation calculations
 	//int net_pips = (total_trades_won * take_profit_pips) - (total_trades_lost * stop_loss_pips);
-	int total_trades = total_trades_won + total_trades_lost;
+	int total_trades = total_trades_won + total_trades_lost + total_trades_neutral;
 
 	// print to csv output
 	out << "{"; // beginning of javascript object
@@ -196,6 +200,7 @@ void Strategy::run(ofstream &out) {
 	out << "cd:" << cooldown << "," << "risk:" << risk_percent_per_trade << ",";
 	out << "sl:" << stop_loss_pips << ",tp:" << take_profit_pips << ",";
 	out << "winners:" << total_trades_won << ",losers:" << total_trades_lost;
+	out << ",neutral:" << total_trades_neutral;
 	out << ",trades:" << total_trades;
 	// out << "," << net_pips;
 

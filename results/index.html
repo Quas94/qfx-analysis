@@ -51,6 +51,7 @@
           <td>TP</td>
           <td>Won</td>
           <td>Lost</td>
+          <td>B/E</td>
           <td>Total</td>
           <td ng-class="{ 'sorted': sortType === 'winPercent' }"><a href="#" ng-click="setSort('winPercent')">Win %</a></td>
           <!-- <td ng-class="{ 'sorted': sortType === 'expected' }"><a href="#" ng-click="setSort('expected')">Expected win %</a></td> -->
@@ -76,6 +77,7 @@
           <td>{{ line.tp }}</td>
           <td>{{ line.winners }}</td>
           <td>{{ line.losers }}</td>
+          <td>{{ line.neutral }}</td>
           <td>{{ line.trades }}</td>
           <td ng-class="{ 'sorted': sortType === 'winPercent' }">{{ line.winPercent.toFixed(2) }}%</td>
           <!-- <td ng-class="{ 'sorted': sortType === 'expected' }">{{ line.expected.toFixed(2) }}%</td> -->

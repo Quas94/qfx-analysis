@@ -20,9 +20,12 @@ private:
 
 	void print_indicators(ofstream &out);
 
+	bool move_stop;
+
 public:
 
-	Strategy(Parser *parser, double risk_percent_per_trade, int stop_loss_pips, int take_profit_pips, int cooldown, const vector<AbstractIndicator*> *ind_ptrs);
+	Strategy(Parser *parser, double risk_percent_per_trade, int stop_loss_pips, int take_profit_pips,
+		int cooldown, const vector<AbstractIndicator*> *ind_ptrs, bool move_stop);
 
 	void run(ofstream &out);
 };
