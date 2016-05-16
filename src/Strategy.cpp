@@ -31,17 +31,18 @@ Strategy::Strategy(Parser *parser, double risk_percent_per_trade, int stop_loss_
 }
 
 void Strategy::print_indicators(ofstream &out) {
-	out << "\"";
+	out << ",desc:[";
 	for (auto it = indicators.begin(); it != indicators.end(); it++) {
-		if (it != indicators.begin()) out << " & ";
-		out << (*it)->get_desc();
+		if (it != indicators.begin()) out << ",";
+		out << "\"" << (*it)->get_desc() << "\"";
 	}
-	out << "\",";
+	out << "],";
 }
 
 void Strategy::run(ofstream &out) {
 	// determine if jpy pair
 	bool is_jpy_pair = (parser->get_currency_pair().find(JPY) != string::npos);
+	string currency_pair = parser->get_currency_pair();
 
 	int info_index = -1;
 	vector<string> info_period_names;
@@ -56,6 +57,7 @@ void Strategy::run(ofstream &out) {
 	double month_worst_percent = numeric_limits<double>::max();
 	int num_winning_months = 0;
 	int num_losing_months = 0;
+	vector<double> month_percentages;
 
 	int num_candles = parser->get_num_candles();
 	const double *prices_high = parser->get_high_prices();
@@ -90,7 +92,7 @@ void Strategy::run(ofstream &out) {
 
 		updated_equity = account.calc_equity(current_close);
 
-		// if at any point, equity falls below 10 dollars, set it to zero
+		// if at any point, equity falls below 10% of starting equity, set it to zero
 		if (updated_equity < (initial_balance / 10)) {
 			account.set_failed();
 			updated_equity = 0;
@@ -118,6 +120,7 @@ void Strategy::run(ofstream &out) {
 			if (prev_month != 0) {
 				// this isn't the very first month
 				double month_percent_change = (month_start_equity == 0) ? 0 : ((updated_equity / month_start_equity) * 100);
+				month_percentages.push_back(month_percent_change);
 				if (month_percent_change < month_worst_percent)
 					month_worst_percent = month_percent_change;
 				if (month_percent_change > month_best_percent)
@@ -168,7 +171,8 @@ void Strategy::run(ofstream &out) {
 	// update last month
 	// cout << "[LAST] prev_month = " << prev_month << ", ";
 	// cout << "month_start_equity being updated from " << month_start_equity << " -> " << updated_equity << endl;
-	double month_percent_change = (updated_equity / month_start_equity) * 100;
+	double month_percent_change = (month_start_equity == 0) ? 0 : ((updated_equity / month_start_equity) * 100);
+	month_percentages.push_back(month_percent_change);
 	if (month_percent_change < month_worst_percent)
 		month_worst_percent = month_percent_change;
 	if (month_percent_change > month_best_percent)
@@ -186,12 +190,13 @@ void Strategy::run(ofstream &out) {
 	int total_trades = total_trades_won + total_trades_lost;
 
 	// print to csv output
+	out << "{"; // beginning of javascript object
+	out << "pair:\"" << currency_pair << "\"";
 	print_indicators(out);
-	out << cooldown << "," << risk_percent_per_trade << "%," << stop_loss_pips << "," << take_profit_pips << ",";
-	out << total_trades_won << "," << total_trades_lost << "," << total_trades << "," <<
-		((int)((total_trades_won / (double)total_trades) * 100)) << "%";
-	// calculate expected win percentage
-	out << "," << ((int) (((double)stop_loss_pips) / (stop_loss_pips + take_profit_pips) * 100)) << "%";
+	out << "cd:" << cooldown << "," << "risk:" << risk_percent_per_trade << ",";
+	out << "sl:" << stop_loss_pips << ",tp:" << take_profit_pips << ",";
+	out << "winners:" << total_trades_won << ",losers:" << total_trades_lost;
+	out << ",trades:" << total_trades;
 	// out << "," << net_pips;
 
 	// lastly, the extra info breakdown
@@ -200,27 +205,36 @@ void Strategy::run(ofstream &out) {
 	bool noteworthy = true;
 	bool semi = true;
 	bool bust = false;
-	int lowest = numeric_limits<int>::max();
+	double worst = numeric_limits<double>::max();
+	out << ",years:[";
 	for (unsigned int y = 0; y < info_account_sizes.size(); y++) {
-		int acc_sz = (int)round(info_account_sizes[y]);
+		double acc_sz = info_account_sizes[y];
 		if (acc_sz == 0) bust = true;
 		if (acc_sz < 80 || (acc_sz < 100 && !noteworthy)) semi = false;
 		if (acc_sz < 100) noteworthy = false;
-		if (acc_sz < lowest) lowest = acc_sz;
-		out << "," << acc_sz << "%";
-		final_multiplier *= (info_account_sizes[y] / 100);
+		out << acc_sz << ",";
+		if (acc_sz < worst) worst = acc_sz;
+		final_multiplier *= (acc_sz / 100);
 	}
-	out << "," << ((int) (final_multiplier * 100)) << "%";
-	out << "," << lowest << "%";
-	out << "," << (noteworthy ? "x" : (semi ? "." : ""));
+	out << "]";
+	out << ",final:" << final_multiplier;
+	out << ",worst:" << worst;
+	// months
+	out << ",months:[";
+	for (unsigned int m = 0; m < month_percentages.size(); m++) {
+		out << month_percentages[m] << ",";
+		// if (m == month_percentages.size() - 1) cout << "last month = " << month_percentages[m] << endl;
+	}
+	out << "]";
 	// worst month and best month
-	out << "," << (month_best_percent) << "%";
-	out << "," << (month_worst_percent) << "%";
+	out << ",month_worst:" << (month_worst_percent);
+	out << ",month_best:" << (month_best_percent);
 	// winning months and losing months
 	int total_months = num_winning_months + num_losing_months;
-	out << "," << num_winning_months;
-	out << ",\"" << num_losing_months << " / " << total_months << ".\"";
-	out << "," << account.get_num_warnings();
+	out << ",month_winners:" << num_winning_months;
+	out << ",month_losers:" << num_losing_months;
+	out << ",warnings:" << account.get_num_warnings();
 	// newline
+	out << "},"; // end of javascript object
 	out << endl;
 }

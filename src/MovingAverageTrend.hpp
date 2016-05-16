@@ -3,7 +3,7 @@
 #include "Parser.hpp"
 
 // indicator of trend built off three moving averages with differing time periods
-class MovingAverageTrend : AbstractIndicator {
+class MovingAverageTrend : public AbstractIndicator {
 
 private:
 	bool simple_ma;

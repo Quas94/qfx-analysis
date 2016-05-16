@@ -1,0 +1,74 @@
+td.sorted {
+  background-color: #d4dde4;
+}
+
+table.table-data {
+  margin-top: 60px;
+}
+
+table.table-filters {
+	margin-bottom: 0;
+}
+
+table>thead>tr>td {
+	font-weight: bold;
+	text-transform: uppercase;
+}
+
+td.cell-pad-left {
+	padding-left: 30px !important;
+	padding-top: 12px !important;
+}
+
+td.cell-pad-right {
+	padding-right: 30px !important;
+}
+
+tr.tr-expansion {
+	background-color: #e6e6fa;
+}
+
+.btn.btn-filter, input.desc-filter {
+  margin-top: 8px;
+}
+
+.btn.btn-fill {
+  width: 100%;
+}
+
+.modal-footer-pad {
+	margin-top: 5px;
+}
+
+#modal-filters {
+	margin-top: 25vh;
+}
+
+/** Fixes navbar modal bug */
+.modal-open[style="padding-right: 17px;"] .navbar-fixed-top,
+.modal-open[style="padding-right: 17px;"] .navbar-fixed-bottom {
+  padding-right: 17px;
+}
+
+.warning {
+	color: orange;
+}
+
+.gap-margin-right {
+	margin-right: 15px;
+}
+
+.ct-label {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.ct-series-a .ct-line {
+	stroke: red;
+	stroke-width: 2px;
+}
+
+.ct-series-a .ct-point {
+	stroke: red;
+	stroke-width: 2px;
+}

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html ng-app="analyzeApp">
+<head>
+  <title>qfx-analysis results</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.9.7/chartist.min.css" rel="stylesheet" type="text/css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.9.7/chartist.min.js"></script>
+
+  <link href="style.css" rel="stylesheet" type="text/css">
+  <script src="out.js"></script>
+  <script src="analyze.js"></script>
+</head>
+<body ng-controller="analyzeController">
+  <!-- Fixed navbar -->
+  <nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#">Qfx Analysis</a>
+      </div>
+      <div id="navbar" class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+          <li><a href="#home">Home</a></li>
+          <li ng-class="{ 'active' : mode === 'data' }"><a href="#" ng-click="mode = 'data'">Data</a></li>
+          <li ng-class="{ 'active' : mode === 'top' }"><a href="#" ng-click="mode = 'top'">Top</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right" ng-show="mode === 'data'">
+          <li>
+            <input type="text" class="form-control input-md desc-filter" ng-model="temp.desc" />
+          </li>
+          <li>
+            <button class="btn btn-info btn-filter gap-margin-right" ng-click="updateDescFilter()"><i class="glyphicon glyphicon-search"></i></button>
+          </li>
+          <li><button class="btn btn-info btn-filter" ng-click="showFiltersModal()">Other Filters</button></li>
+        </ul>
+      </div><!--/.nav-collapse -->
+    </div>
+  </nav>
+  <div class="container-fluid">
+    <table ng-show="mode === 'data'" class="table table-data table-hover table-bordered">
+      <thead>
+        <tr>
+          <td>Pair</td>
+          <td>Strategy &amp; Indicators</td>
+          <td>CD</td>
+          <td>Risk</td>
+          <td>SL</td>
+          <td>TP</td>
+          <td>Won</td>
+          <td>Lost</td>
+          <td>Total</td>
+          <td ng-class="{ 'sorted': sortType === 'winPercent' }"><a href="#" ng-click="setSort('winPercent')">Win %</a></td>
+          <!-- <td ng-class="{ 'sorted': sortType === 'expected' }"><a href="#" ng-click="setSort('expected')">Expected win %</a></td> -->
+          <td ng-class="{ 'sorted': sortType === 'diff' }"><a href="#" ng-click="setSort('diff')">Diff %</a></td>
+          <td>DD %</td>
+          <td ng-repeat="i in [2011, 2012, 2013, 2014, 2015, 2016]">{{ i }}</td>
+          <td ng-class="{ 'sorted': sortType === 'final' }"><a href="#" ng-click="setSort('final')">Final %</a></td>
+          <td ng-class="{ 'sorted': sortType === 'worst' }"><a href="#" ng-click="setSort('worst')">Worst year</a></td>
+          <td ng-class="{ 'sorted': sortType === 'month_best' }"><a href="#" ng-click="setSort('month_best')">Best month</a></td>
+          <td ng-class="{ 'sorted': sortType === 'month_worst' }"><a href="#" ng-click="setSort('month_worst')">Worst month</a></td>
+          <td ng-class="{ 'sorted': sortType === 'month_winners' }"><a href="#" ng-click="setSort('month_winners')">Win mo's</a></td>
+          <td>Lose mo's</td>
+          <td>Warns</td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr ng-repeat="line in data | orderBy:sortType:sortReverse | filter:greaterThan('trades', filters.minTotalTrades) | filter:greaterThan('final', filters.minFinalPercent / 100) | filter:greaterThan('worst', filters.minWorstYear) | filter:greaterThan('month_worst', filters.minWorstMonth) | filter:strContains('desc', filters.desc)">
+          <td>{{ line.pair }}</td>
+          <td>{{ getFullDesc(line) }}<button class="btn btn-warning btn-xs pull-right" ng-click="viewSingleChart(line)">View Chart</button></td>
+          <td>{{ line.cd }}</td>
+          <td>{{ line.risk }}%</td>
+          <td>{{ line.sl }}</td>
+          <td>{{ line.tp }}</td>
+          <td>{{ line.winners }}</td>
+          <td>{{ line.losers }}</td>
+          <td>{{ line.trades }}</td>
+          <td ng-class="{ 'sorted': sortType === 'winPercent' }">{{ line.winPercent.toFixed(2) }}%</td>
+          <!-- <td ng-class="{ 'sorted': sortType === 'expected' }">{{ line.expected.toFixed(2) }}%</td> -->
+          <td ng-class="{ 'sorted': sortType === 'diff' }">{{ (line.diff > 0 ? '+' : '') + line.diff.toFixed(2) }}%</td>
+          <td>{{ getLargestDrawdown(getLineEquities(line)).toFixed(2) }}%</td>
+          <td ng-repeat="year in line.years track by $index">{{ year.toFixed(2) }}</td>
+          <td ng-class="{ 'sorted': sortType === 'final' }">{{ (line.final * 100).toFixed(2) }}%</td>
+          <td ng-class="{ 'sorted': sortType === 'worst' }">{{ line.worst.toFixed(2) }}%</td>
+          <td ng-class="{ 'sorted': sortType === 'month_best' }">{{ line.month_best.toFixed(2) }}%</td>
+          <td ng-class="{ 'sorted': sortType === 'month_worst' }">{{ line.month_worst.toFixed(2) }}%</td>
+          <td ng-class="{ 'sorted': sortType === 'month_winners' }">{{ line.month_winners }}</td>
+          <td>{{ line.month_losers }} / {{ line.month_winners + line.month_losers }}</td>
+          <td>{{ line.warnings }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <table ng-show="mode === 'top'" class="table table-data table-hover table-bordered">
+      <thead>
+        <tr>
+          <td></td>
+          <td>Strategy & Indicators Combo</td>
+          <td><a href="#" ng-click="topSortType = 'largestDrawdown'">Largest Drawdown</a></td>
+          <td>Total Trades</td>
+          <td>Best Final %</td>
+          <td>Worst Final %</td>
+          <td>Best Month %</td>
+          <td>Worst Month %</td>
+          <td><a href="#" ng-click="topSortType = 'approxEnd'">Approx End %</a></td>
+        </tr>
+      </thead>
+      <tbody ng-repeat="strat in strategies | orderBy:topSortType:(topSortType !== 'largestDrawdown')">
+        <tr ng-class="{ 'tr-expansion': strat.expanded }">
+          <td><button class="btn btn-primary btn-xs btn-fill" ng-click="expand(strat)">{{ strat.expanded ? '-' : '+' }}</button></td>
+          <td>{{ strat.name }}<button class="btn btn-warning btn-xs pull-right" ng-click="viewStrategyChart(strat)">View Chart</button></td>
+          <td>{{ strat.largestDrawdown.toFixed(2) }}%</td>
+          <td>{{ strat.totalWinTrades }} / {{ strat.totalTrades }}</td>
+          <td>{{ (strat.bestFinal * 100).toFixed(2) }}% / {{ strat.bestFinalPair }}</td>
+          <td>{{ (strat.worstFinal * 100).toFixed(2) }}% / {{ strat.worstFinalPair }}</td>
+          <td>{{ strat.bestMonth.toFixed(2) }}%</td>
+          <td>{{ strat.worstMonth.toFixed(2) }}%</td>
+          <td>{{ strat.approxEnd }}%</td>
+        </tr>
+        <tr ng-show="strat.expanded" ng-repeat="currencyPair in strat.currencies track by $index" class="tr-expansion">
+          <td></td>
+          <td></td>
+          <td class="cell-pad-right"><span class="pull-right">{{ currencyPair }}</span></td>
+          <td>{{ strat.winTradesPerYear[$index] }} / {{ strat.tradesPerYear[$index] }}</td>
+          <td>{{ (strat.finals[$index] * 100).toFixed(2) }}%</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="modal-filters" class="modal fade" role="dialog" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+          <h4 class="modal-title">Filters</h4>
+        </div>
+        <table class="modal-body table table-filters table-hover">
+          <tbody>
+            <tr>
+              <td class="col-xs-10 cell cell-pad-left">Min Total Trades</td>
+              <td class="col-xs-2 cell cell-pad-right"><input type="text" class="form-control input-sm" maxlength="4" ng-model="temp.minTotalTrades" /></td>
+            </tr>
+            <tr>
+              <td class="cell cell-pad-left">Min Final %</td>
+              <td class="cell cell-pad-right"><input type="text" class="form-control input-sm" maxlength="4" ng-model="temp.minFinalPercent" /></td>
+            </tr>
+            <tr>
+              <td class="cell cell-pad-left">Min Worst Year %</td>
+              <td class="cell cell-pad-right"><input type="text" class="form-control input-sm" maxlength="4" ng-model="temp.minWorstYear" /></td>
+            </tr>
+            <tr>
+              <td class="cell cell-pad-left">Min Worst Month %</td>
+              <td class="cell cell-pad-right"><input type="text" class="form-control input-sm" maxlength="4" ng-model="temp.minWorstMonth" /></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="modal-footer">
+          <div class="col-xs-8 modal-footer-pad"><span ng-show="filtersError" class="warning pull-left">Inputs must be numbers from 0 - 1,000.</span></div>
+          <div class="col-xs-4">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-success" ng-click="updateFilters()">Filter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-chart" class="modal fade" role="dialog" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+          <h4 class="modal-title">Max drawdown = {{ modalChartMaxDrawdown.toFixed(2) }}%</h4>
+        </div>
+        <div class="modal-body">
+          <div class="ct-chart ct-perfect-fourth"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

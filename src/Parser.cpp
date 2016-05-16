@@ -76,7 +76,7 @@ const SimpleDate * Parser::get_date_tracker() const {
 void Parser::parse() {
 	// open the input file
 	string file_path;
-	file_path = "./" + currency_pair + ".csv";
+	file_path = "../inputs/" + currency_pair + ".csv";
 	ifs.open(file_path, fstream::in);
 	if (ifs.fail()) {
 		string message = "Failed to open data file for " + currency_pair;

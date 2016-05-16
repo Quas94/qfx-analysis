@@ -52,6 +52,7 @@ Signal MovingAverageTrend::get_signal(int index) {
 }
 
 string MovingAverageTrend::get_desc() {
-	return ((simple_ma ? "SMA (" : "EMA (") + to_string(period_a) + "," + to_string(period_b) + "," +
-		to_string(period_c) + ")");
+	string ma_type = simple_ma ? "S" : "E";
+	return "MA(" + ma_type + "," + to_string(period_a) + "," + to_string(period_b) + "," +
+		to_string(period_c) + ")";
 }

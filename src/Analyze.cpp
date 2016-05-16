@@ -34,31 +34,56 @@ inline bool valid_month(int month) {
 }
 
 int main(int argc, char** argv) {
-	if (argc != 7) {
-		cout << "Usage: 'analyze.exe filename.csv currency_pair startyear startmonth endyear endmonth'" << endl;
-		return EXIT_FAILURE;
-	}
+	int start_year = 2011;
+	int start_month = 1;
+	int end_year = 2016;
+	int end_month = 4;
 
-	string output_file = argv[1];
-	string currency_pair = argv[2];
-	int start_year = stoi(argv[3]);
-	int start_month = stoi(argv[4]);
-	int end_year = stoi(argv[5]);
-	int end_month = stoi(argv[6]);
-	if (!valid_year(start_year) || !valid_year(end_year) || !valid_month(start_month) || !valid_month(end_month)) {
-		cout << "Years must be between 2006-2016, and months must be between 1-12" << endl;
-		return EXIT_FAILURE;
-	}
+	const string output_file = "../results/out.js";
+	const vector<string> currencies = {
+		"AUD_CAD",
+		"AUD_CHF",
+		"AUD_JPY",
+		"AUD_NZD",
+		"AUD_USD",
 
-	cout << "Specified output file: " << output_file << " - will be saved to ../results/" << endl;
-	output_file = "../results/" + output_file;
+		"CAD_CHF",
+		"CAD_JPY",
+
+		"CHF_JPY",
+
+		"EUR_AUD",
+		"EUR_CAD",
+		"EUR_CHF",
+		"EUR_GBP",
+		"EUR_JPY",
+		"EUR_NZD",
+		"EUR_USD",
+
+		"GBP_AUD",
+		"GBP_CAD",
+		"GBP_CHF",
+		"GBP_JPY",
+		"GBP_NZD",
+		"GBP_USD",
+
+		"NZD_CAD",
+		"NZD_CHF",
+		"NZD_JPY",
+		"NZD_USD",
+
+		"USD_CAD",
+		"USD_CHF",
+		"USD_JPY",
+	};
+
 	// check if file exists and confirm overwrite
 	ifstream check_exists;
 	check_exists.open(output_file, ifstream::in);
 	if (check_exists.is_open()) { // file exists
 		string answer = "";
 		while (answer != "Y" && answer != "N") {
-			cout << "File already exists. Overwrite? (Y or N): ";
+			cout << "out.js already exists. Overwrite? (Y or N): ";
 			getline(cin, answer);
 			if (answer.size() == 1) {
 				if (answer[0] == 'y') answer = "Y";
@@ -77,24 +102,6 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	SimpleDate start(start_year, start_month, 1);
-	SimpleDate end(end_year, end_month, 31);
-	Parser* parser = new Parser(currency_pair, start, end, Hour);
-	parser->parse();
-	int num_years = end_year - start_year + 1; // for use with extra info
-
-	/*
-	cout << "After parsing, we have written " << parser->get_num_candles() << " candles" << endl;
-	cout << "First 100 OHLC:" << endl;
-	for (int i = 0; i < parser->get_num_candles(); i++) {
-		cout << parser->get_open_prices()[i] << ", " << parser->get_high_prices()[i] << ", " <<
-			parser->get_low_prices()[i] << ", " << parser->get_close_prices()[i] << endl;
-	}
-	*/
-
-	cout << "REMINDER: we are assuming the currency is always EUR_USD right now" << endl;
-	cout << "REMINDER: we currently only look at closing price, without factoring in shadows" << endl;
-
 	// technical analysis
 	// start up TA_lib
 	if (TA_Initialize() != TA_SUCCESS) {
@@ -104,8 +111,7 @@ int main(int argc, char** argv) {
 
 	// initialise our strategy setups
 	vector<pair<int, int> > sl_tp_pairs;
-	//vector<int> pip_sizes{ 25 };
-	vector<int> pip_sizes{ 25, 50, 75, 100 };
+	vector<int> pip_sizes{ 50, 75, 100, 150, 200, 250, 300 };
 	for (unsigned int i = 0; i < pip_sizes.size(); i++) {
 		for (unsigned int j = i; j < pip_sizes.size(); j++) {
 			sl_tp_pairs.push_back(make_pair(pip_sizes[i], pip_sizes[j]));
@@ -113,62 +119,77 @@ int main(int argc, char** argv) {
 	}
 
 	// vector<int> cooldowns{ 1, 4, 12, 24 };
-	vector<int> cooldowns{ 4, 6, 8 };
-
-	// indicators
-	vector<vector<AbstractIndicator*>*> indicator_groups;
-	AbstractIndicator *mat = (AbstractIndicator*) new MovingAverageTrend(parser, false, 20, 50, 100);
-	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 5, 95), mat });
-	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 10, 90), mat });
-	indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 15, 85), mat });
-	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new Stochastic(parser, 5, 95)) });
-	//indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 20, 80) });
-	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new Stochastic(parser, 49, 51) });
-	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new AlwaysBuy(parser) });
-	// indicator_groups.push_back(new vector<AbstractIndicator*>{ new ReverseIndicator(new AlwaysBuy(parser)) });
-	// indicators.push_back(new ReverseIndicator(new Stochastic(parser, 10, 90)));
-	// @TODO add more
+	vector<int> cooldowns{ 4, 8 };
 
 	// risk per trade
-	const double risk_percent_per_trade = 2.5;
+	const double risk_percent_per_trade = 2.0;
 
-	// print first line of csv
-	out << "Indicator list and descriptions,CD,Risk,SL,TP,Winners,Losers,Total trades," <<
-		"Win %,Expected Win %";
-	// for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
-	// print out years for extra info: account size at the end of each year
-	for (int y = 0; y < num_years; y++) out << "," << (start_year + y);
-	out << ",Final %,Worst Year,Status,Best month,Worst month,Winning months,Losing months, Warnings";
-	out << endl;
-	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
-		for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {
-			for (auto i = cooldowns.begin(); i != cooldowns.end(); i++) {
-				Strategy *strategy = new Strategy(parser, risk_percent_per_trade, it->first, it->second, *i, *ig);
-				strategy->run(out);
-				delete strategy;
+	SimpleDate start(start_year, start_month, 1);
+	SimpleDate end(end_year, end_month, 31);
+	int num_years = end_year - start_year + 1;
+
+	out << "var NUM_PAIRS = " << currencies.size() << ";" << endl;
+	out << "var DATA = [" << endl;
+
+	for (auto it = currencies.begin(); it != currencies.end(); it++) {
+		Parser* parser = new Parser(*it, start, end, Hour);
+		parser->parse();
+
+		// indicators
+		vector<vector<AbstractIndicator*>*> indicator_groups;
+
+		vector<AbstractIndicator*> mas = {
+			new MovingAverageTrend(parser, false, 10, 25, 50),
+			new MovingAverageTrend(parser, false, 25, 50, 100),
+			new MovingAverageTrend(parser, false, 50, 100, 200),
+			new MovingAverageTrend(parser, false, 100, 200, 400),
+		};
+		vector<AbstractIndicator*> stochs = {
+			new Stochastic(parser, 5, 95, 14),
+			new Stochastic(parser, 10, 90, 14),
+			new Stochastic(parser, 15, 85, 14),
+			new Stochastic(parser, 5, 95, 9),
+			new Stochastic(parser, 10, 90, 9),
+			new Stochastic(parser, 15, 85, 9),
+		};
+
+		for (auto ma = mas.begin(); ma != mas.end(); ma++) {
+			for (unsigned int i = 0; i < stochs.size(); i++) {
+				indicator_groups.push_back(new vector<AbstractIndicator*>{ *ma, stochs[i] });
 			}
 		}
-	}
+		for (auto stoch = stochs.begin(); stoch != stochs.end(); stoch++) {
+			indicator_groups.push_back(new vector<AbstractIndicator*>{ *stoch });
+		}
 
-	// delete indicators
-	// @TODO figure out how to re-use indicator instances above and then delete here without multiple deletions
-	// on same pointer
-	/*
-	for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
-		vector<AbstractIndicator*> *group = *ig;
-		for (auto it = group->begin(); it != group->end(); it++) {
+		for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
+			for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {
+				for (auto i = cooldowns.begin(); i != cooldowns.end(); i++) {
+					Strategy *strategy = new Strategy(parser, risk_percent_per_trade, it->first, it->second, *i, *ig);
+					strategy->run(out);
+					delete strategy;
+				}
+			}
+		}
+
+		// delete indicator groups
+		for (auto it = indicator_groups.begin(); it != indicator_groups.end(); it++) {
 			delete *it;
 		}
-		delete group;
+		// delete indicators
+		for (auto it = mas.begin(); it != mas.end(); it++) delete *it;
+		for (auto it = stochs.begin(); it != stochs.end(); it++) delete *it;
+
+		delete parser;
 	}
-	*/
+
+	out << "];" << endl;
 	
 	// shutdown TA_lib
 	if (TA_Shutdown() != TA_SUCCESS) {
 		throw runtime_error("Could not shutdown TA_lib");
 	}
 
-	delete parser;
 	cout << "Finished" << endl;
 
 	return EXIT_SUCCESS;
