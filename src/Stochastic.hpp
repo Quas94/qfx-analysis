@@ -19,12 +19,20 @@ private:
 	int out_begin;
 	int out_num;
 
+	// one-hour
 	double *out_slowk;
 	double *out_slowd;
+	// four-hour
+	double *fhour_out_slowk;
+	double *fhour_out_slowd;
+
+	const bool multiple_timeframes;
+
+	pair<double, double> calc_fhour_stoch(int index);
 
 public:
 	Stochastic(Parser *parser, int buy_threshold = 20, int sell_threshold = 80,
-		int fastk = 14, int slowk = 3, int slowd = 3);
+		int fastk = 14, int slowk = 3, int slowd = 3, bool multiple_timeframes = false);
 
 	~Stochastic();
 
