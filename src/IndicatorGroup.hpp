@@ -16,4 +16,11 @@ public:
 	virtual const vector<vector<AbstractIndicator*>*>& get_groups() final {
 		return indicator_groups;
 	}
+
+	~IndicatorGroup() {
+		// delete indicator groups
+		for (auto it = indicator_groups.begin(); it != indicator_groups.end(); it++) {
+			delete *it;
+		}
+	}
 };

@@ -23,7 +23,8 @@
 #include "Parser.hpp"
 #include "Strategy.hpp"
 
-#include "StochMATrend.hpp"
+#include "StochMATrendGroup.hpp"
+#include "ThreeDucksGroup.hpp"
 
 using namespace std;
 
@@ -138,7 +139,8 @@ int main(int argc, char** argv) {
 		Parser *parser = new Parser(*it, start, end, Hour);
 		parser->parse();
 
-		StochMATrend *indicator_group_wrapper = new StochMATrend(parser);
+		//IndicatorGroup *indicator_group_wrapper = new StochMATrendGroup(parser);
+		IndicatorGroup *indicator_group_wrapper = new ThreeDucksGroup(parser);
 		vector<vector<AbstractIndicator*>*> indicator_groups = indicator_group_wrapper->get_groups();
 		for (auto ig = indicator_groups.begin(); ig != indicator_groups.end(); ig++) {
 			for (auto it = sl_tp_pairs.begin(); it != sl_tp_pairs.end(); it++) {

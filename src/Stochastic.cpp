@@ -2,7 +2,6 @@
 #include <algorithm>
 
 #include "Stochastic.hpp"
-#include "Parser.hpp"
 #include "Constants.hpp"
 
 using namespace std;

@@ -3,13 +3,13 @@
 #include "IndicatorGroup.hpp"
 #include "Parser.hpp"
 
-class StochMATrend : public IndicatorGroup {
+class StochMATrendGroup : public IndicatorGroup {
 private:
 	vector<AbstractIndicator*> mas;
 	vector<AbstractIndicator*> stochs;
 
 public:
-	StochMATrend(Parser *parser);
+	StochMATrendGroup(Parser *parser);
 
-	~StochMATrend();
+	~StochMATrendGroup();
 };

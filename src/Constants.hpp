@@ -9,6 +9,7 @@ const char SPACE = ' ';
 const char DASH = '-';
 const char COLON = ':';
 const char PERIOD = '.';
+const char UNDERSCORE = '_';
 
 const string JPY = "JPY";
 
